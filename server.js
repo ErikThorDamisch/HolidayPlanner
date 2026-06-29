@@ -1,41 +1,41 @@
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const fs       = require('fs');
-const path     = require('path');
 const crypto   = require('crypto');
+const { Pool } = require('pg');
+const path     = require('path');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const DATA_DIR    = process.env.DATA_DIR || path.join(__dirname, 'data');
-const USERS_FILE  = path.join(DATA_DIR, 'users.json');
-const USER_DATA   = path.join(DATA_DIR, 'userdata');
-
-// IMPORTANT: set JWT_SECRET as an environment variable on Render (or anywhere
-// you deploy). If left unset, a random secret is generated at startup, which
-// means all users are logged out every time the server restarts.
-const JWT_SECRET  = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
-
-// Set DISABLE_REGISTRATION=true in env vars to stop new sign-ups
-// (useful once you've created all the accounts you need)
+const JWT_SECRET           = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const DISABLE_REGISTRATION = process.env.DISABLE_REGISTRATION === 'true';
 
-// ── Ensure directories exist ──────────────────────────────────────────────────
-[DATA_DIR, USER_DATA].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+// ── Database ──────────────────────────────────────────────────────────────────
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+});
+
+async function initDb() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+            id            TEXT PRIMARY KEY,
+            username      TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at    TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS year_data (
+            user_id TEXT    NOT NULL,
+            year    INTEGER NOT NULL,
+            data    JSONB   NOT NULL DEFAULT '{}',
+            PRIMARY KEY (user_id, year)
+        );
+    `);
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// ── User store helpers ────────────────────────────────────────────────────────
-function readUsers() {
-    try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
-    catch (e) { return { users: [] }; }
-}
-function writeUsers(store) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(store, null, 2));
-}
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -60,26 +60,27 @@ app.post('/api/auth/register', async (req, res) => {
     }
     const { username, password } = req.body || {};
     if (!username || !password) return res.status(400).json({ error: 'Username and password are required.' });
-    if (username.trim().length < 3)  return res.status(400).json({ error: 'Username must be at least 3 characters.' });
-    if (password.length < 6)         return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    if (username.trim().length < 3) return res.status(400).json({ error: 'Username must be at least 3 characters.' });
+    if (password.length < 6)        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
 
-    const store = readUsers();
-    if (store.users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-        return res.status(409).json({ error: 'That username is already taken.' });
+    try {
+        const existing = await pool.query(
+            'SELECT id FROM users WHERE lower(username) = lower($1)', [username]
+        );
+        if (existing.rows.length) return res.status(409).json({ error: 'That username is already taken.' });
+
+        const hash = await bcrypt.hash(password, 10);
+        const id   = crypto.randomUUID();
+        await pool.query(
+            'INSERT INTO users (id, username, password_hash, created_at) VALUES ($1, $2, $3, $4)',
+            [id, username.trim(), hash, new Date().toISOString()]
+        );
+        const token = jwt.sign({ id, username: username.trim() }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, username: username.trim() });
+    } catch (e) {
+        console.error('Register error:', e);
+        res.status(500).json({ error: 'Registration failed.' });
     }
-
-    const hash = await bcrypt.hash(password, 10);
-    const user = {
-        id: crypto.randomUUID(),
-        username: username.trim(),
-        passwordHash: hash,
-        createdAt: new Date().toISOString()
-    };
-    store.users.push(user);
-    writeUsers(store);
-
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, username: user.username });
 });
 
 // POST /api/auth/login
@@ -87,71 +88,83 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body || {};
     if (!username || !password) return res.status(400).json({ error: 'Username and password are required.' });
 
-    const store = readUsers();
-    const user  = store.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user) return res.status(401).json({ error: 'Invalid username or password.' });
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE lower(username) = lower($1)', [username]
+        );
+        const user = result.rows[0];
+        if (!user) return res.status(401).json({ error: 'Invalid username or password.' });
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok)  return res.status(401).json({ error: 'Invalid username or password.' });
+        const ok = await bcrypt.compare(password, user.password_hash);
+        if (!ok) return res.status(401).json({ error: 'Invalid username or password.' });
 
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, username: user.username });
+        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, username: user.username });
+    } catch (e) {
+        console.error('Login error:', e);
+        res.status(500).json({ error: 'Login failed.' });
+    }
 });
 
-// GET /api/auth/me  — validate token and return username
+// GET /api/auth/me
 app.get('/api/auth/me', requireAuth, (req, res) => {
     res.json({ username: req.user.username });
 });
 
-// ── Per-user data helpers ─────────────────────────────────────────────────────
-function userDir(userId) {
-    const dir = path.join(USER_DATA, userId);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    return dir;
-}
-
-function yearFile(userId, year) {
-    return path.join(userDir(userId), `year_${parseInt(year)}.json`);
-}
+// ── Data routes ───────────────────────────────────────────────────────────────
 
 function defaultYearData() {
     return { settings: { totalDays: 25, dailyHours: 8 }, vacations: {}, holidays: [] };
 }
 
-// ── Data routes (auth required) ───────────────────────────────────────────────
-
 // GET /api/year/:year
-app.get('/api/year/:year', requireAuth, (req, res) => {
-    const file = yearFile(req.user.id, req.params.year);
-    if (!fs.existsSync(file)) return res.json(defaultYearData());
-    try { res.json(JSON.parse(fs.readFileSync(file, 'utf8'))); }
-    catch (e) { res.json(defaultYearData()); }
+app.get('/api/year/:year', requireAuth, async (req, res) => {
+    const year = parseInt(req.params.year);
+    try {
+        const result = await pool.query(
+            'SELECT data FROM year_data WHERE user_id = $1 AND year = $2',
+            [req.user.id, year]
+        );
+        res.json(result.rows.length ? result.rows[0].data : defaultYearData());
+    } catch (e) {
+        console.error('Fetch year error:', e);
+        res.json(defaultYearData());
+    }
 });
 
 // PUT /api/year/:year
-app.put('/api/year/:year', requireAuth, (req, res) => {
+app.put('/api/year/:year', requireAuth, async (req, res) => {
     const year = parseInt(req.params.year);
     if (isNaN(year) || year < 2000 || year > 2100) {
         return res.status(400).json({ error: 'Invalid year.' });
     }
     try {
-        fs.writeFileSync(yearFile(req.user.id, year), JSON.stringify(req.body, null, 2));
+        await pool.query(
+            `INSERT INTO year_data (user_id, year, data) VALUES ($1, $2, $3)
+             ON CONFLICT (user_id, year) DO UPDATE SET data = EXCLUDED.data`,
+            [req.user.id, year, req.body]
+        );
         res.json({ ok: true });
     } catch (e) {
+        console.error('Save year error:', e);
         res.status(500).json({ error: 'Failed to save data.' });
     }
 });
 
-// ── Catch-all: serve login page for unknown routes ────────────────────────────
+// ── Catch-all ─────────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Swiss Holiday Planner v2 running at http://localhost:${PORT}`);
-    console.log(`Registration: ${DISABLE_REGISTRATION ? 'DISABLED' : 'enabled'}`);
-    if (!process.env.JWT_SECRET) {
-        console.warn('⚠  JWT_SECRET not set — tokens will be invalidated on every restart!');
-        console.warn('   Set JWT_SECRET as an environment variable for persistent sessions.');
-    }
-});
+// ── Start ─────────────────────────────────────────────────────────────────────
+initDb()
+    .then(() => app.listen(PORT, () => {
+        console.log(`Holiday Planner running at http://localhost:${PORT}`);
+        console.log(`Registration: ${DISABLE_REGISTRATION ? 'DISABLED' : 'enabled'}`);
+        if (!process.env.JWT_SECRET)    console.warn('⚠  JWT_SECRET not set — sessions reset on every restart!');
+        if (!process.env.DATABASE_URL)  console.warn('⚠  DATABASE_URL not set!');
+    }))
+    .catch(err => {
+        console.error('Failed to connect to database:', err.message);
+        process.exit(1);
+    });
