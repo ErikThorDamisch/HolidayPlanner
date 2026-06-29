@@ -264,7 +264,7 @@ body {
   position: relative; user-select: none;
 }
 .day.empty   { cursor: default; }
-.day.weekend { color: var(--border); cursor: default; }
+.day.weekend { background: var(--accent-bg); color: var(--accent); font-weight: 600; cursor: default; }
 .day:not(.empty):not(.weekend):not(.bh-full):hover { background: var(--green-bg); }
 .day.today { font-weight: 700; color: var(--accent); }
 .day.today::after {
