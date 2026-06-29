@@ -1,6 +1,6 @@
 {
   "name": "holiday-planner",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "Personal vacation day planner with user accounts and cross-device sync",
   "main": "server.js",
   "scripts": {

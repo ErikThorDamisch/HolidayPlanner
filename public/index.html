@@ -768,6 +768,14 @@ body {
             </div>
             <button class="btn btn-accent btn-sm" onclick="addHoliday()">Add</button>
           </div>
+          <!-- shown only when ½ day is selected -->
+          <div id="periodPicker" style="display:none">
+            <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:500">Which half is the bank holiday?</div>
+            <div class="half-toggle" style="max-width:240px">
+              <button id="togMorn" onclick="setHolPeriod('morning')">🌅 Morning</button>
+              <button class="on" id="togAftn" onclick="setHolPeriod('afternoon')">🌇 Afternoon</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -853,6 +861,7 @@ let currentYear  = new Date().getFullYear();
 let cache        = null;
 let selectedDate = null;
 let holType      = 'full';
+let holPeriod    = 'afternoon'; // which half is the bank holiday (morning | afternoon)
 let saveTimer    = null;
 let currentTab   = 'cal';
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
@@ -1023,9 +1032,16 @@ function renderBalance() {
    BANK HOLIDAYS
 ───────────────────────────────────────────── */
 function setHolType(type) {
-  holType=type;
-  document.getElementById('togFull').className=type==='full'?'on':'';
-  document.getElementById('togHalf').className=type==='half'?'on':'';
+  holType = type;
+  document.getElementById('togFull').className = type==='full' ? 'on' : '';
+  document.getElementById('togHalf').className = type==='half' ? 'on' : '';
+  document.getElementById('periodPicker').style.display = type==='half' ? 'block' : 'none';
+}
+
+function setHolPeriod(period) {
+  holPeriod = period;
+  document.getElementById('togMorn').className = period==='morning'   ? 'on' : '';
+  document.getElementById('togAftn').className = period==='afternoon' ? 'on' : '';
 }
 
 function addHoliday() {
@@ -1035,7 +1051,7 @@ function addHoliday() {
   if (!date.startsWith(String(currentYear))) { alert('Please choose a date in '+currentYear+'.'); return; }
   const d=getData();
   if (d.holidays.some(h=>h.date===date&&h.name===name)) return;
-  d.holidays.push({date,name,type:holType});
+  d.holidays.push({ date, name, type: holType, halfPeriod: holType==='half' ? holPeriod : undefined });
   d.holidays.sort((a,b)=>a.date.localeCompare(b.date));
   saveData(d);
   document.getElementById('holName').value='';
@@ -1076,16 +1092,29 @@ function easterDate(yr) {
 }
 function shift(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
 
+// Helper: nth weekday of a month (e.g. 3rd Monday of April)
+// month: 0-indexed (3=April), weekday: 0=Sun 1=Mon … 6=Sat, n: 1-based
+function nthWeekday(year, month, weekday, n) {
+  const first = new Date(year, month, 1);
+  const daysToFirst = (weekday - first.getDay() + 7) % 7;
+  return new Date(year, month, 1 + daysToFirst + (n - 1) * 7);
+}
+
 function getZurichHolidays(yr) {
-  const e=easterDate(yr), mk=(dt,nm,tp)=>({date:toStr(dt),name:nm,type:tp||'full'});
+  const e=easterDate(yr), mk=(dt,nm,tp,hp)=>({date:toStr(dt),name:nm,type:tp||'full',halfPeriod:hp});
   return [
-    mk(new Date(yr,0,1),"New Year's Day"),  mk(new Date(yr,0,2),'Berchtoldstag'),
-    mk(shift(e,-2),'Good Friday'),           mk(shift(e,1),'Easter Monday'),
-    mk(new Date(yr,4,1),'Labour Day'),       mk(shift(e,39),'Ascension Day'),
-    mk(shift(e,50),'Whit Monday'),           mk(new Date(yr,7,1),'Swiss National Day'),
-    mk(new Date(yr,11,25),'Christmas Day'),  mk(new Date(yr,11,26),"St. Stephen's Day"),
-    mk(new Date(yr,11,24),'Christmas Eve','half'),
-    mk(new Date(yr,11,31),"New Year's Eve",'half'),
+    mk(new Date(yr,0,1),         "New Year's Day"),
+    mk(new Date(yr,0,2),         'Berchtoldstag'),
+    mk(shift(e,-2),              'Good Friday'),
+    mk(shift(e,1),               'Easter Monday'),
+    mk(nthWeekday(yr,3,1,3),     'Sechseläuten',   'half', 'afternoon'),  // 3rd Monday of April
+    mk(new Date(yr,4,1),         'Labour Day'),
+    mk(shift(e,39),              'Ascension Day'),
+    mk(shift(e,50),              'Whit Monday'),
+    mk(new Date(yr,7,1),         'Swiss National Day'),
+    mk(nthWeekday(yr,8,1,2),     'Knabenschiessen', 'half', 'afternoon'), // 2nd Monday of September
+    mk(new Date(yr,11,25),       'Christmas Day'),
+    mk(new Date(yr,11,26),       "St. Stephen's Day"),
   ].sort((a,b)=>a.date.localeCompare(b.date));
 }
 
@@ -1320,8 +1349,33 @@ function buildMonth(mi,vacations,hmap) {
     if(isWE){cls.push('weekend');}
     else if(holiday&&holiday.type==='full'){cls.push('bh-full');cell.title=holiday.name;}
     else if(holiday&&holiday.type==='half'){
-      cls.push('bh-half');cell.title=holiday.name+' (half day)';
-      cell.addEventListener('click',()=>openPopup(ds,vacation,true));
+      // Which half is the bank holiday? Default to afternoon.
+      const hp = holiday.halfPeriod || 'afternoon';
+      cell.title = holiday.name + ' (' + hp + ')';
+      cls.push('bh-half');
+
+      if (vacation) {
+        // Show split: vacation half (green) + holiday half (amber)
+        if (hp === 'afternoon') {
+          // Holiday is afternoon (right=amber), vacation is morning (left=green)
+          cell.style.background = 'linear-gradient(to right, var(--green) 50%, var(--amber-bg) 50%)';
+        } else {
+          // Holiday is morning (left=amber), vacation is afternoon (right=green)
+          cell.style.background = 'linear-gradient(to right, var(--amber-bg) 50%, var(--green) 50%)';
+        }
+        cell.style.color      = 'var(--ink)';
+        cell.style.fontWeight = '600';
+      } else {
+        // No vacation yet — show holiday half only
+        if (hp === 'afternoon') {
+          cell.style.background = 'linear-gradient(to right, transparent 50%, var(--amber-bg) 50%)';
+        } else {
+          cell.style.background = 'linear-gradient(to right, var(--amber-bg) 50%, transparent 50%)';
+        }
+        cell.style.color      = 'var(--amber-dark)';
+        cell.style.fontWeight = '600';
+      }
+      cell.addEventListener('click', () => openPopup(ds, vacation, holiday));
     }else if(vacation){cls.push('vac-'+vacation);cell.addEventListener('click',()=>openPopup(ds,vacation));}
     else{cell.title='Add time off';cell.addEventListener('click',()=>openPopup(ds,null));}
     if(isToday)cls.push('today');
@@ -1333,17 +1387,39 @@ function buildMonth(mi,vacations,hmap) {
 /* ─────────────────────────────────────────────
    POPUP
 ───────────────────────────────────────────── */
-function openPopup(ds,existing,halfHol){
-  selectedDate=ds;
-  const [y,m,d]=ds.split('-');
-  const label=new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('popTitle').textContent=existing?'Edit Time Off':'Add Time Off';
-  document.getElementById('popDate').textContent=label+(halfHol?' · ½ bank holiday':'');
-  document.getElementById('rangeFrom').value=ds;
-  document.getElementById('rangeTo').value=ds;
-  document.getElementById('btnRemove').style.display=existing?'flex':'none';
-  hlType(existing);
-  document.getElementById('overlay').style.display='flex';
+function openPopup(ds, existing, halfHol) {
+  selectedDate = ds;
+  const [y,m,d] = ds.split('-');
+  const label = new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // halfHol can be a holiday object (new) or boolean true (legacy)
+  const holObj = (halfHol && typeof halfHol === 'object') ? halfHol : null;
+  const hp     = holObj ? (holObj.halfPeriod || 'afternoon') : null;
+
+  document.getElementById('popTitle').textContent = existing ? 'Edit Time Off' : 'Add Time Off';
+  document.getElementById('popDate').textContent  = label + (holObj
+    ? ' · ' + holObj.name + ' (' + hp + ')'
+    : halfHol ? ' · half bank holiday' : '');
+  document.getElementById('rangeFrom').value = ds;
+  document.getElementById('rangeTo').value   = ds;
+  document.getElementById('btnRemove').style.display = existing ? 'flex' : 'none';
+
+  // Pre-select the sensible vacation half; disable the blocked halves
+  const suggested = hp === 'afternoon' ? 'morning' : hp === 'morning' ? 'afternoon' : null;
+  hlType(existing || (suggested && !existing ? suggested : null));
+
+  ['Full','Morning','Afternoon'].forEach(t => {
+    const btn = document.getElementById('dt'+t);
+    const val = t.toLowerCase();
+    const blocked = hp && (val === 'full' || val === hp);
+    btn.style.opacity       = blocked ? '.3' : '1';
+    btn.style.pointerEvents = blocked ? 'none' : '';
+    btn.title = blocked
+      ? (val === 'full' ? 'Full day not available — half bank holiday' : 'This half is a bank holiday')
+      : '';
+  });
+
+  document.getElementById('overlay').style.display = 'flex';
 }
 function hlType(sel){
   ['Full','Morning','Afternoon'].forEach(t=>{
@@ -1373,7 +1449,13 @@ function addRange(){
   const cur=new Date(from),end=new Date(to);
   while(cur<=end){
     const dow=cur.getDay(),isWE=(dow===0||dow===6),ds=toStr(cur),h=hmap[ds];
-    if(!isWE&&(!h||h.type==='half')){d.vacations[ds]='full';added++;}
+    if(!isWE&&(!h||h.type==='half')){
+      // For half-day holidays, book the non-holiday half automatically
+      const vacType = (h && h.type==='half')
+        ? ((h.halfPeriod||'afternoon')==='afternoon' ? 'morning' : 'afternoon')
+        : 'full';
+      d.vacations[ds]=vacType; added++;
+    }
     cur.setDate(cur.getDate()+1);
   }
   saveData(d); closePopup(); renderCalendar();
@@ -1381,7 +1463,15 @@ function addRange(){
   if(!added) alert('No working days found in that range.');
 }
 function overlayClick(e){ if(e.target===document.getElementById('overlay')) closePopup(); }
-function closePopup(){ document.getElementById('overlay').style.display='none'; selectedDate=null; }
+function closePopup(){
+  // Reset any button disabling before closing
+  ['Full','Morning','Afternoon'].forEach(t=>{
+    const btn=document.getElementById('dt'+t);
+    btn.style.opacity='1'; btn.style.pointerEvents=''; btn.title='';
+  });
+  document.getElementById('overlay').style.display='none';
+  selectedDate=null;
+}
 
 /* ─────────────────────────────────────────────
    YEAR NAV
