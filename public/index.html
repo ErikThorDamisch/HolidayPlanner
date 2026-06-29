@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holiday Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ──────────────────────────────────────────────────────── */
+:root {
+  --ink:        #0A0E1A;
+  --ink-soft:   #4A5068;
+  --bg:         #ECEEF8;
+  --surface:    #FFFFFF;
+  --border:     #DDE0F0;
+  --accent:     #5C6BC0;
+  --accent-bg:  #ECEEF8;
+  --green:      #34C98B;
+  --green-bg:   #E8FAF3;
+  --green-dark: #1A6B47;
+  --amber:      #F4A135;
+  --amber-bg:   #FEF5E7;
+  --amber-dark: #925E10;
+  --red:        #E84040;
+  --red-bg:     #FDEAEA;
+  --shadow-sm:  0 1px 3px rgba(10,14,26,.07), 0 1px 2px rgba(10,14,26,.04);
+  --r:          10px;
+}
+
+/* ── Reset ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--ink);
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -.02em;
+  text-decoration: none;
+}
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 15px; height: 15px; fill: #fff; }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.sync-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background .3s;
+  flex-shrink: 0;
+}
+.sync-dot.saving { background: #93C5FD; }
+.sync-dot.saved  { background: var(--green); }
+.sync-dot.error  { background: var(--red); }
+
+.user-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  padding: 4px 12px 4px 5px;
+}
+.user-avatar {
+  width: 22px; height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+  color: #fff; text-transform: uppercase;
+}
+.user-name { font-size: 12.5px; color: rgba(255,255,255,.8); font-weight: 500; }
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.55);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.logout-btn:hover { color: #fff; border-color: rgba(255,255,255,.35); }
+
+/* ── Sub Nav ─────────────────────────────────────────────────────── */
+.subnav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 54px;
+  z-index: 190;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-group {
+  display: flex;
+  background: var(--bg);
+  border-radius: 9px;
+  padding: 3px;
+  position: relative;
+}
+.tab-indicator {
+  position: absolute;
+  top: 3px; bottom: 3px; left: 3px;
+  background: var(--surface);
+  border-radius: 7px;
+  box-shadow: 0 1px 4px rgba(10,14,26,.12);
+  transition: transform .22s cubic-bezier(.4,0,.2,1), width .22s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  will-change: transform, width;
+}
+.tab-btn {
+  position: relative;
+  z-index: 1;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 15px;
+  border: none; background: transparent;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  color: var(--ink-soft);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color .2s;
+  white-space: nowrap;
+}
+.tab-btn.active { color: var(--ink); font-weight: 600; }
+.tab-btn svg { width: 14px; height: 14px; opacity: .55; flex-shrink: 0; }
+.tab-btn.active svg { opacity: 1; }
+
+.year-nav { display: flex; align-items: center; gap: 4px; }
+.yr-btn {
+  width: 30px; height: 30px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 7px;
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-soft);
+  transition: all .15s;
+}
+.yr-btn:hover { background: var(--bg); color: var(--ink); }
+.yr-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px; font-weight: 500;
+  letter-spacing: -.01em;
+  color: var(--ink);
+  min-width: 48px; text-align: center;
+}
+
+/* ── Loading bar ─────────────────────────────────────────────────── */
+.loading-bar {
+  position: fixed; top: 104px; left: 0; right: 0; height: 2px;
+  background: var(--accent); z-index: 300;
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .3s ease, opacity .3s; opacity: 0;
+}
+.loading-bar.on   { transform: scaleX(.65); opacity: 1; }
+.loading-bar.done { transform: scaleX(1); opacity: 0; }
+
+/* ── Views ───────────────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR VIEW
+═══════════════════════════════════════════════════════════════════ */
+.balance-strip {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+}
+.balance-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; gap: 24px;
+}
+.bal-nums { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
+.bal-used {
+  font-family: 'DM Mono', monospace;
+  font-size: 36px; font-weight: 500;
+  letter-spacing: -.04em; line-height: 1;
+}
+.bal-of    { font-size: 18px; color: var(--ink-soft); font-weight: 300; }
+.bal-total { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--ink-soft); font-weight: 400; }
+.bal-label {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-soft); margin-top: 1px;
+}
+.bal-ticks-wrap { flex: 1; min-width: 0; }
+.bal-ticks { display: flex; gap: 3px; height: 22px; align-items: stretch; }
+.bal-tick { flex: 1; border-radius: 3px; background: var(--bg); min-width: 0; transition: background .3s; }
+.bal-tick.used { background: var(--green); }
+.bal-tick.half { background: linear-gradient(to right, var(--green) 50%, var(--bg) 50%); }
+.bal-tick.over { background: var(--red); }
+.bal-stats { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; text-align: right; }
+.bal-stat-main { font-size: 13.5px; font-weight: 600; }
+.bal-stat-sub  { font-size: 11.5px; color: var(--ink-soft); }
+
+.cal-wrap { max-width: 1200px; margin: 0 auto; padding: 20px 24px 48px; }
+.year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+/* Month card */
+.month-card {
+  background: var(--surface);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.month-name { font-size: 12.5px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); margin-bottom: 10px; }
+.weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+.wd-lbl {
+  text-align: center; font-size: 9px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-soft); opacity: .5; padding: 2px 0;
+}
+.wd-lbl.we { opacity: .28; }
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+/* Day cell */
+.day {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; font-size: 11px; font-weight: 400;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  position: relative; user-select: none;
+}
+.day.empty   { cursor: default; }
+.day.weekend { color: var(--border); cursor: default; }
+.day:not(.empty):not(.weekend):not(.bh-full):hover { background: var(--green-bg); }
+.day.today { font-weight: 700; color: var(--accent); }
+.day.today::after {
+  content: ''; position: absolute;
+  bottom: 2px; left: 50%; transform: translateX(-50%);
+  width: 3px; height: 3px; background: var(--accent); border-radius: 50%;
+}
+.day.vac-full      { background: var(--green); color: #fff; font-weight: 600; }
+.day.vac-full:hover { background: #29a874; }
+.day.vac-morning   { background: linear-gradient(to right, var(--green) 50%, transparent 50%); font-weight: 600; color: var(--ink); }
+.day.vac-afternoon { background: linear-gradient(to right, transparent 50%, var(--green) 50%); font-weight: 600; color: var(--ink); }
+.day.bh-full  { background: var(--amber-bg); color: var(--amber-dark); font-weight: 600; cursor: default; }
+.day.bh-half  { background: linear-gradient(to right, var(--amber-bg) 50%, transparent 50%); color: var(--amber-dark); font-weight: 600; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MY VACATIONS VIEW
+═══════════════════════════════════════════════════════════════════ */
+.vac-view-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+}
+
+/* Summary strip */
+.vac-summary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.vs-item { display: flex; flex-direction: column; gap: 1px; }
+.vs-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px; font-weight: 500;
+  letter-spacing: -.03em; line-height: 1;
+}
+.vs-lbl { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.vs-div { width: 1px; background: var(--border); align-self: stretch; }
+
+/* Empty state */
+.vac-empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+}
+.vac-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+  opacity: .6;
+}
+.vac-empty-title {
+  font-size: 17px; font-weight: 700;
+  color: var(--ink); margin-bottom: 6px;
+}
+.vac-empty-sub {
+  font-size: 13.5px; color: var(--ink-soft);
+  line-height: 1.6; margin-bottom: 20px;
+}
+.vac-empty-cta {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--accent); color: #fff;
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 600;
+  cursor: pointer; border: none; font-family: inherit;
+  transition: background .15s;
+}
+.vac-empty-cta:hover { background: #4a5aad; }
+
+/* Vacation block cards */
+.vblock-list { display: flex; flex-direction: column; gap: 12px; }
+
+.vblock {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  border-left: 4px solid var(--green);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.vblock-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--green-bg);
+  border-bottom: 1px solid #c8f0de;
+}
+
+.vblock-range {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--ink);
+}
+
+.vblock-badge {
+  background: var(--green);
+  color: #fff;
+  padding: 3px 11px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vblock-rm {
+  background: none; border: none;
+  cursor: pointer;
+  color: #9ac4b1;
+  font-size: 19px; line-height: 1;
+  padding: 2px 4px; border-radius: 4px;
+  transition: color .12s; flex-shrink: 0;
+}
+.vblock-rm:hover { color: var(--red); }
+
+/* Day rows inside block */
+.vblock-days { padding: 0; }
+
+.vblock-day {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.vblock-day:last-child { border-bottom: none; }
+
+.vbd-wd {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-soft);
+  width: 30px; flex-shrink: 0;
+}
+
+.vbd-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; font-weight: 500;
+  color: var(--ink);
+  width: 30px; flex-shrink: 0;
+}
+
+.vbd-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.vbd-dot.half { background: linear-gradient(135deg, var(--green) 50%, var(--bg) 50%); border: 1px solid var(--green); }
+.vbd-dot.hol  { background: var(--amber); }
+
+.vbd-type { flex: 1; color: var(--ink); }
+
+.vbd-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SETTINGS VIEW
+═══════════════════════════════════════════════════════════════════ */
+.settings-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.scard {
+  background: var(--surface);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.scard-head {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.scard-title {
+  font-size: 11.5px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-soft);
+}
+.scard-body { padding: 20px; }
+
+/* Region buttons */
+.region-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.region-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 15px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer; transition: all .15s;
+  font-family: inherit; text-align: left;
+}
+.region-btn:hover { border-color: var(--accent); background: var(--accent-bg); }
+.region-flag {
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.region-city { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.region-sub  { font-size: 11px; color: var(--ink-soft); }
+
+/* Holiday list */
+.hol-list {
+  display: flex; flex-direction: column; gap: 5px;
+  margin-bottom: 14px; max-height: 240px; overflow-y: auto;
+}
+.hol-empty { font-size: 13px; color: var(--ink-soft); text-align: center; padding: 14px 0; font-style: italic; }
+.hol-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--amber-bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--amber);
+}
+.hol-item-info { flex: 1; min-width: 0; }
+.hol-item-name { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hol-item-date { font-size: 11px; color: var(--ink-soft); }
+.hol-badge { font-size: 10px; font-weight: 700; background: var(--amber); color: #fff; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+.hol-rm { background: none; border: none; cursor: pointer; color: var(--ink-soft); font-size: 17px; line-height: 1; padding: 2px 3px; border-radius: 4px; transition: color .12s; }
+.hol-rm:hover { color: var(--red); }
+
+/* Add holiday form */
+.add-hol { display: flex; flex-direction: column; gap: 8px; }
+.add-hol input {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-family: inherit; font-size: 13.5px;
+  color: var(--ink); background: var(--bg);
+  outline: none; transition: border-color .15s, background .15s;
+}
+.add-hol input:focus { border-color: var(--accent); background: var(--surface); }
+.add-hol-row { display: flex; gap: 8px; align-items: center; }
+
+.half-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; flex: 1; }
+.half-toggle button {
+  flex: 1; padding: 8px 6px; border: none;
+  background: var(--bg); font-family: inherit;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--ink-soft); transition: all .15s;
+}
+.half-toggle button.on { background: var(--ink); color: #fff; }
+
+/* Settings fields */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+.field-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+.field-row { display: flex; align-items: center; gap: 9px; }
+.field-row input {
+  width: 82px; padding: 9px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+  color: var(--ink); background: var(--bg);
+  outline: none; transition: border-color .15s;
+}
+.field-row input:focus { border-color: var(--accent); background: var(--surface); }
+.field-unit { font-size: 13px; color: var(--ink-soft); }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #4a5aad; }
+.btn-ghost  { background: var(--bg); color: var(--ink); border: 1.5px solid var(--border); }
+.btn-ghost:hover  { background: var(--border); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: 1.5px solid #fca5a5; }
+.btn-danger:hover { background: #fca5a5; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── Popup ───────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,14,26,.35);
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .12s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.popup {
+  background: var(--surface);
+  border-radius: 14px; padding: 24px; width: 320px;
+  box-shadow: 0 24px 64px rgba(10,14,26,.18);
+  animation: slideUp .15s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.popup-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.popup-sub   { font-size: 12px; color: var(--ink-soft); margin-bottom: 18px; }
+.popup-lbl   { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 8px; }
+.day-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 18px; }
+.dty-btn {
+  padding: 11px 6px;
+  border: 1.5px solid var(--border); border-radius: 9px;
+  background: var(--bg); font-family: inherit;
+  font-size: 11px; font-weight: 500;
+  cursor: pointer; text-align: center;
+  transition: all .15s; color: var(--ink);
+}
+.dty-btn:hover { border-color: var(--green); background: var(--green-bg); }
+.dty-btn.sel   { border-color: var(--green); background: var(--green-bg); color: var(--green-dark); }
+.dty-icon { font-size: 19px; margin-bottom: 4px; }
+.popup-div { height: 1px; background: var(--border); margin: 16px 0; }
+.range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.range-grp label { display: block; font-size: 11px; color: var(--ink-soft); margin-bottom: 4px; }
+.range-grp input {
+  width: 100%; padding: 7px 10px;
+  border: 1.5px solid var(--border); border-radius: 7px;
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  outline: none; background: var(--bg);
+}
+.range-grp input:focus { border-color: var(--green); background: var(--surface); }
+.popup-footer { display: flex; gap: 8px; margin-top: 16px; }
+.popup-footer .btn { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Bar ──────────────────────────────────────────────────── -->
+<header class="topbar">
+  <a class="logo" href="#">
+    <div class="logo-mark">
+      <svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 2a6 6 0 110 12A6 6 0 0110 4zm0 1a1 1 0 00-1 1v4.586l-2.707 2.707a1 1 0 101.414 1.414L10 12.414V6a1 1 0 00-1-1z" fill-rule="evenodd" clip-rule="evenodd"/></svg>
+    </div>
+    Holiday Planner
+  </a>
+  <div class="topbar-right">
+    <div class="sync-dot" id="syncDot"></div>
+    <div class="user-chip">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span class="user-name" id="userName">…</span>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</header>
+
+<!-- ── Sub Nav ──────────────────────────────────────────────────── -->
+<nav class="subnav">
+  <div class="tab-group" id="tabGroup">
+    <div class="tab-indicator" id="tabInd"></div>
+
+    <button class="tab-btn active" id="tCal" onclick="switchTab('cal')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round"/></svg>
+      Calendar
+    </button>
+
+    <button class="tab-btn" id="tVac" onclick="switchTab('vac')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17l4-4m0 0l2.5-6L16 3l-4 6.5L6 12zm4-4l2 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      My Vacations
+    </button>
+
+    <button class="tab-btn" id="tSet" onclick="switchTab('set')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke-linecap="round"/></svg>
+      Settings
+    </button>
+  </div>
+
+  <div class="year-nav" id="yearNavArea">
+    <button class="yr-btn" onclick="changeYear(-1)">‹</button>
+    <span class="yr-label" id="yearLabel">2025</span>
+    <button class="yr-btn" onclick="changeYear(1)">›</button>
+  </div>
+</nav>
+
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     CALENDAR VIEW
+════════════════════════════════════════════════════════════════ -->
+<div class="view active" id="viewCal">
+  <div class="balance-strip">
+    <div class="balance-inner">
+      <div>
+        <div class="bal-nums">
+          <span class="bal-used" id="balUsed">0</span>
+          <span class="bal-of">/</span>
+          <span class="bal-total" id="balTotal">25</span>
+        </div>
+        <div class="bal-label">days used</div>
+      </div>
+      <div class="bal-ticks-wrap">
+        <div class="bal-ticks" id="balTicks"></div>
+      </div>
+      <div class="bal-stats">
+        <div class="bal-stat-main" id="balMain">25 days left</div>
+        <div class="bal-stat-sub"  id="balSub">200h remaining</div>
+      </div>
+    </div>
+  </div>
+  <div class="cal-wrap">
+    <div class="year-grid" id="yearGrid"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MY VACATIONS VIEW
+════════════════════════════════════════════════════════════════ -->
+<div class="view" id="viewVac">
+  <div class="vac-view-wrap">
+
+    <!-- Summary -->
+    <div class="vac-summary" id="vacSummary">
+      <div class="vs-item">
+        <span class="vs-num" id="vsTrips">0</span>
+        <span class="vs-lbl">Vacations</span>
+      </div>
+      <div class="vs-div"></div>
+      <div class="vs-item">
+        <span class="vs-num" id="vsDays">0</span>
+        <span class="vs-lbl">Days planned</span>
+      </div>
+      <div class="vs-div"></div>
+      <div class="vs-item">
+        <span class="vs-num" id="vsRem">0</span>
+        <span class="vs-lbl">Days remaining</span>
+      </div>
+      <div class="vs-div"></div>
+      <div class="vs-item">
+        <span class="vs-num" id="vsHours">0h</span>
+        <span class="vs-lbl">Hours remaining</span>
+      </div>
+    </div>
+
+    <!-- Block list or empty state -->
+    <div id="vacContent"></div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SETTINGS VIEW
+════════════════════════════════════════════════════════════════ -->
+<div class="view" id="viewSet">
+  <div class="settings-wrap">
+
+    <!-- Public Holidays -->
+    <div class="scard">
+      <div class="scard-head">
+        <span class="scard-title">Public Holidays</span>
+        <span style="font-size:11.5px;color:var(--ink-soft)" id="holYearLbl"></span>
+      </div>
+      <div class="scard-body">
+        <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px">
+          Load official public holidays for your location. Your custom holidays are kept.
+        </p>
+        <div class="region-btns">
+          <button class="region-btn" onclick="loadHolidays('zurich')">
+            <div class="region-flag">🇨🇭</div>
+            <div>
+              <div class="region-city">Zürich</div>
+              <div class="region-sub">Canton Zürich · Switzerland</div>
+            </div>
+          </button>
+          <button class="region-btn" onclick="loadHolidays('hamburg')">
+            <div class="region-flag">🇩🇪</div>
+            <div>
+              <div class="region-city">Hamburg</div>
+              <div class="region-sub">Freie und Hansestadt · Germany</div>
+            </div>
+          </button>
+        </div>
+        <div class="hol-list" id="holList">
+          <div class="hol-empty">No bank holidays added yet</div>
+        </div>
+        <div class="add-hol">
+          <input type="text" id="holName" placeholder="Holiday name">
+          <div class="add-hol-row">
+            <input type="date" id="holDate" style="flex:1">
+            <div class="half-toggle">
+              <button class="on" id="togFull" onclick="setHolType('full')">Full</button>
+              <button id="togHalf" onclick="setHolType('half')">½ day</button>
+            </div>
+            <button class="btn btn-accent btn-sm" onclick="addHoliday()">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Work Settings -->
+    <div class="scard">
+      <div class="scard-head">
+        <span class="scard-title">Work Settings</span>
+        <span style="font-size:11.5px;color:var(--ink-soft)" id="settingsYearLbl"></span>
+      </div>
+      <div class="scard-body">
+        <div class="field">
+          <label class="field-label">Total vacation days this year</label>
+          <div class="field-row">
+            <input type="number" id="totalDays" min="0" max="365" step="0.5" value="25">
+            <span class="field-unit">days / year</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Standard daily working hours</label>
+          <div class="field-row">
+            <input type="number" id="dailyHours" min="1" max="24" step="0.1" value="8">
+            <span class="field-unit">hours / day</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Day Popup ─────────────────────────────────────────────────── -->
+<div class="overlay" id="overlay" style="display:none" onclick="overlayClick(event)">
+  <div class="popup">
+    <div class="popup-title" id="popTitle">Add Time Off</div>
+    <div class="popup-sub"   id="popDate"></div>
+    <div class="popup-lbl">Single Day</div>
+    <div class="day-type-grid">
+      <div class="dty-btn" id="dtFull"      onclick="pickType('full')"><div class="dty-icon">☀️</div>Full Day</div>
+      <div class="dty-btn" id="dtMorning"   onclick="pickType('morning')"><div class="dty-icon">🌅</div>Morning</div>
+      <div class="dty-btn" id="dtAfternoon" onclick="pickType('afternoon')"><div class="dty-icon">🌇</div>Afternoon</div>
+    </div>
+    <div class="popup-div"></div>
+    <div class="popup-lbl">Date Range (full days)</div>
+    <div class="range-row">
+      <div class="range-grp"><label>From</label><input type="date" id="rangeFrom"></div>
+      <div class="range-grp"><label>To</label>  <input type="date" id="rangeTo"></div>
+    </div>
+    <button class="btn btn-accent" style="width:100%" onclick="addRange()">
+      Add range — skip weekends &amp; holidays
+    </button>
+    <div class="popup-footer">
+      <button class="btn btn-danger" id="btnRemove" onclick="removeDay()" style="display:none">Remove</button>
+      <button class="btn btn-ghost"  onclick="closePopup()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────
+   AUTH
+───────────────────────────────────────────── */
+let token = localStorage.getItem('shp_token');
+function authH() { return { 'Content-Type':'application/json','Authorization':'Bearer '+token }; }
+function logout() { localStorage.removeItem('shp_token'); location.href='/login.html'; }
+
+async function verifyAuth() {
+  if (!token) { location.href='/login.html'; return false; }
+  try {
+    const r = await fetch('/api/auth/me',{ headers:{'Authorization':'Bearer '+token} });
+    if (!r.ok) { location.href='/login.html'; return false; }
+    const { username } = await r.json();
+    document.getElementById('userName').textContent   = username;
+    document.getElementById('userAvatar').textContent = username[0].toUpperCase();
+    return true;
+  } catch(e) { location.href='/login.html'; return false; }
+}
+
+/* ─────────────────────────────────────────────
+   STATE
+───────────────────────────────────────────── */
+let currentYear  = new Date().getFullYear();
+let cache        = null;
+let selectedDate = null;
+let holType      = 'full';
+let saveTimer    = null;
+let currentTab   = 'cal';
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+/* ─────────────────────────────────────────────
+   TAB NAVIGATION  (3 tabs)
+───────────────────────────────────────────── */
+const TAB_IDS = { cal:'tCal', vac:'tVac', set:'tSet' };
+const VIEW_IDS = { cal:'viewCal', vac:'viewVac', set:'viewSet' };
+
+function switchTab(tab) {
+  currentTab = tab;
+  Object.keys(TAB_IDS).forEach(k => {
+    document.getElementById(TAB_IDS[k]).classList.toggle('active', k === tab);
+    document.getElementById(VIEW_IDS[k]).classList.toggle('active', k === tab);
+  });
+  document.getElementById('yearNavArea').style.visibility = tab === 'cal' ? 'visible' : 'hidden';
+  positionInd();
+  if (tab === 'vac') renderVacations();
+  if (tab === 'set') {
+    renderHolList();
+    document.getElementById('holYearLbl').textContent = currentYear;
+    document.getElementById('settingsYearLbl').textContent = currentYear;
+  }
+}
+
+function positionInd() {
+  const btn = document.getElementById(TAB_IDS[currentTab]);
+  const grp = document.getElementById('tabGroup');
+  const ind = document.getElementById('tabInd');
+  if (!btn || !grp) return;
+  const gr = grp.getBoundingClientRect();
+  const br = btn.getBoundingClientRect();
+  ind.style.width = br.width + 'px';
+  ind.style.left  = (br.left - gr.left) + 'px';
+}
+
+window.addEventListener('resize', positionInd);
+
+/* ─────────────────────────────────────────────
+   SERVER API
+───────────────────────────────────────────── */
+function setLoading(on) {
+  const b = document.getElementById('loadingBar');
+  b.className = 'loading-bar' + (on ? ' on' : ' done');
+  if (!on) setTimeout(() => b.className='loading-bar', 400);
+}
+function setSync(s) {
+  const d = document.getElementById('syncDot');
+  d.className = 'sync-dot ' + s;
+  if (s==='saved') setTimeout(() => d.className='sync-dot', 2000);
+}
+
+async function fetchYear(yr) {
+  setLoading(true);
+  try {
+    const r = await fetch('/api/year/'+yr, { headers: authH() });
+    if (r.status===401) { logout(); return null; }
+    setLoading(false); return await r.json();
+  } catch(e) { setLoading(false); setSync('error'); return defaultData(); }
+}
+
+async function pushYear(yr, data) {
+  setSync('saving');
+  try {
+    const r = await fetch('/api/year/'+yr, { method:'PUT', headers:authH(), body:JSON.stringify(data) });
+    if (r.status===401) logout(); else setSync('saved');
+  } catch(e) { setSync('error'); }
+}
+
+function defaultData() { return { settings:{totalDays:25,dailyHours:8}, vacations:{}, holidays:[] }; }
+function getData()      { return cache || defaultData(); }
+function saveData(data) {
+  cache = data;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => pushYear(currentYear, data), 600);
+}
+
+/* ─────────────────────────────────────────────
+   SETTINGS FIELDS
+───────────────────────────────────────────── */
+function loadFields() {
+  const d = getData();
+  document.getElementById('totalDays').value  = d.settings.totalDays;
+  document.getElementById('dailyHours').value = d.settings.dailyHours;
+}
+function saveFields() {
+  const d = getData();
+  d.settings.totalDays  = parseFloat(document.getElementById('totalDays').value)  || 25;
+  d.settings.dailyHours = parseFloat(document.getElementById('dailyHours').value) || 8;
+  saveData(d); renderBalance();
+}
+document.getElementById('totalDays').addEventListener('change', saveFields);
+document.getElementById('dailyHours').addEventListener('change', saveFields);
+
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+function toStr(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(s)  { const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; }
+function fmt(n)      { return Number.isInteger(n)?String(n):n.toFixed(1); }
+function buildHMap(holidays) { const m={}; holidays.forEach(h=>{ m[h.date]=h; }); return m; }
+
+function countDays(vacations, holidays) {
+  const hmap=buildHMap(holidays), yp=String(currentYear)+'-';
+  let n=0;
+  for (const [date,type] of Object.entries(vacations)) {
+    if (!date.startsWith(yp)) continue;
+    const h=hmap[date];
+    if (h && h.type==='full') continue;
+    const v=type==='full'?1:.5;
+    n += (h && h.type==='half') ? Math.min(v,.5) : v;
+  }
+  return n;
+}
+
+/* ─────────────────────────────────────────────
+   BALANCE TICKS
+───────────────────────────────────────────── */
+function renderBalance() {
+  const d    = getData();
+  const used = countDays(d.vacations, d.holidays);
+  const tot  = d.settings.totalDays;
+  const hpd  = d.settings.dailyHours;
+  const rem  = tot - used;
+  const yp   = String(currentYear)+'-';
+  const hmap = buildHMap(d.holidays);
+
+  document.getElementById('balUsed').textContent = fmt(used);
+  document.getElementById('balTotal').textContent= fmt(tot);
+  document.getElementById('balMain').textContent = fmt(rem)+' day'+(rem!==1?'s':'')+' left';
+  document.getElementById('balSub').textContent  = fmt(Math.max(0,rem)*hpd)+'h remaining';
+
+  const ticks = document.getElementById('balTicks');
+  ticks.innerHTML = '';
+  const entries = Object.entries(d.vacations)
+    .filter(([dt])=>dt.startsWith(yp))
+    .sort(([a],[b])=>a.localeCompare(b))
+    .map(([dt,type])=>{
+      const h=hmap[dt];
+      if (h && h.type==='full') return 0;
+      const v=type==='full'?1:.5;
+      return (h && h.type==='half') ? Math.min(v,.5) : v;
+    })
+    .filter(v=>v>0);
+
+  let sum=0; for (const v of entries) { sum+=v; if (sum>tot) break; }
+  const full=Math.floor(sum), hasHalf=(sum-full)>=.5, isOver=used>tot;
+
+  for (let i=0; i<tot; i++) {
+    const t=document.createElement('div'); t.className='bal-tick';
+    if (i<full)            t.classList.add(isOver?'over':'used');
+    else if (i===full&&hasHalf) t.classList.add(isOver?'over':'half');
+    ticks.appendChild(t);
+  }
+  if (isOver) {
+    const extra=Math.ceil(used-tot);
+    for (let i=0;i<extra;i++) {
+      const t=document.createElement('div'); t.className='bal-tick over';
+      ticks.appendChild(t);
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────
+   BANK HOLIDAYS
+───────────────────────────────────────────── */
+function setHolType(type) {
+  holType=type;
+  document.getElementById('togFull').className=type==='full'?'on':'';
+  document.getElementById('togHalf').className=type==='half'?'on':'';
+}
+
+function addHoliday() {
+  const name=document.getElementById('holName').value.trim();
+  const date=document.getElementById('holDate').value;
+  if (!name||!date) { alert('Please enter a name and date.'); return; }
+  if (!date.startsWith(String(currentYear))) { alert('Please choose a date in '+currentYear+'.'); return; }
+  const d=getData();
+  if (d.holidays.some(h=>h.date===date&&h.name===name)) return;
+  d.holidays.push({date,name,type:holType});
+  d.holidays.sort((a,b)=>a.date.localeCompare(b.date));
+  saveData(d);
+  document.getElementById('holName').value='';
+  document.getElementById('holDate').value='';
+  renderHolList(); renderCalendar();
+}
+
+function removeHoliday(i) {
+  const d=getData(); d.holidays.splice(i,1); saveData(d);
+  renderHolList(); renderCalendar();
+}
+
+function renderHolList() {
+  const d=getData(), el=document.getElementById('holList');
+  document.getElementById('holYearLbl').textContent=currentYear;
+  if (!d.holidays.length) { el.innerHTML='<div class="hol-empty">No bank holidays added yet</div>'; return; }
+  el.innerHTML=d.holidays.map((h,i)=>`
+    <div class="hol-item">
+      <div class="hol-item-info">
+        <div class="hol-item-name" title="${h.name}">${h.name}</div>
+        <div class="hol-item-date">${fmtDate(h.date)}</div>
+      </div>
+      <span class="hol-badge">${h.type==='half'?'½':'Full'}</span>
+      <button class="hol-rm" onclick="removeHoliday(${i})">×</button>
+    </div>`).join('');
+}
+
+/* ─────────────────────────────────────────────
+   REGION LOADERS
+───────────────────────────────────────────── */
+function easterDate(yr) {
+  const a=yr%19,b=Math.floor(yr/100),c=yr%100,d=Math.floor(b/4),e=b%4,
+        f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+        i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
+        m=Math.floor((a+11*h+22*l)/451),
+        mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;
+  return new Date(yr,mo-1,dy);
+}
+function shift(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
+
+function getZurichHolidays(yr) {
+  const e=easterDate(yr), mk=(dt,nm,tp)=>({date:toStr(dt),name:nm,type:tp||'full'});
+  return [
+    mk(new Date(yr,0,1),"New Year's Day"),  mk(new Date(yr,0,2),'Berchtoldstag'),
+    mk(shift(e,-2),'Good Friday'),           mk(shift(e,1),'Easter Monday'),
+    mk(new Date(yr,4,1),'Labour Day'),       mk(shift(e,39),'Ascension Day'),
+    mk(shift(e,50),'Whit Monday'),           mk(new Date(yr,7,1),'Swiss National Day'),
+    mk(new Date(yr,11,25),'Christmas Day'),  mk(new Date(yr,11,26),"St. Stephen's Day"),
+    mk(new Date(yr,11,24),'Christmas Eve','half'),
+    mk(new Date(yr,11,31),"New Year's Eve",'half'),
+  ].sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function getHamburgHolidays(yr) {
+  const e=easterDate(yr), mk=(dt,nm)=>({date:toStr(dt),name:nm,type:'full'});
+  return [
+    mk(new Date(yr,0,1),'Neujahr'),          mk(shift(e,-2),'Karfreitag'),
+    mk(shift(e,1),'Ostermontag'),            mk(new Date(yr,4,1),'Tag der Arbeit'),
+    mk(shift(e,39),'Himmelfahrt'),           mk(shift(e,50),'Pfingstmontag'),
+    mk(new Date(yr,9,3),'Tag der Deutschen Einheit'),
+    mk(new Date(yr,9,31),'Reformationstag'),
+    mk(new Date(yr,11,25),'1. Weihnachtstag'),
+    mk(new Date(yr,11,26),'2. Weihnachtstag'),
+  ].sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function loadHolidays(region) {
+  const d=getData(), list=region==='zurich'?getZurichHolidays(currentYear):getHamburgHolidays(currentYear);
+  const seen=new Set(d.holidays.map(h=>h.date+'|'+h.name));
+  let added=0;
+  for (const h of list) {
+    const key=h.date+'|'+h.name;
+    if (!seen.has(key)) { d.holidays.push(h); seen.add(key); added++; }
+  }
+  if (!added) { alert(`${region==='zurich'?'Zürich':'Hamburg'} holidays for ${currentYear} are already loaded.`); return; }
+  d.holidays.sort((a,b)=>a.date.localeCompare(b.date));
+  saveData(d); renderHolList(); renderCalendar();
+}
+
+/* ─────────────────────────────────────────────
+   VACATION GROUPING
+───────────────────────────────────────────── */
+function groupVacations(vacations, holidays) {
+  const hmap = buildHMap(holidays);
+  const yp   = String(currentYear)+'-';
+
+  const entries = Object.entries(vacations)
+    .filter(([dt])=>dt.startsWith(yp))
+    .map(([date,type])=>({date,type}))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  if (!entries.length) return [];
+
+  const blocks = [];
+  let cur = [entries[0]];
+
+  for (let i=1; i<entries.length; i++) {
+    const prev = new Date(entries[i-1].date+'T00:00:00');
+    const next = new Date(entries[i].date+'T00:00:00');
+
+    // Walk every day between prev and next — if only weekends / full bank holidays, merge
+    const walker = new Date(prev); walker.setDate(walker.getDate()+1);
+    let canMerge = true;
+    while (walker < next) {
+      const ds  = toStr(walker);
+      const dow = walker.getDay();
+      const isWE  = (dow===0||dow===6);
+      const h     = hmap[ds];
+      const isFH  = h && h.type==='full';
+      if (!isWE && !isFH) { canMerge=false; break; }
+      walker.setDate(walker.getDate()+1);
+    }
+
+    if (canMerge) cur.push(entries[i]);
+    else { blocks.push(cur); cur=[entries[i]]; }
+  }
+  blocks.push(cur);
+  return blocks;
+}
+
+/* ─────────────────────────────────────────────
+   DATE RANGE FORMATTER
+───────────────────────────────────────────── */
+function fmtRange(startStr, endStr) {
+  const s = new Date(startStr+'T00:00:00');
+  const e = new Date(endStr  +'T00:00:00');
+  const wds = s.toLocaleDateString('en-GB',{weekday:'short'});
+  const wde = e.toLocaleDateString('en-GB',{weekday:'short'});
+  if (startStr===endStr) {
+    return s.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  }
+  if (s.getMonth()===e.getMonth()) {
+    const sD = s.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'});
+    const eD = e.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'});
+    const mo = s.toLocaleDateString('en-GB',{month:'long'});
+    return `${sD} – ${eD} ${mo}`;
+  }
+  const sP = s.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const eP = e.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  return `${wds} ${sP} – ${wde} ${eP}`;
+}
+
+/* ─────────────────────────────────────────────
+   MY VACATIONS RENDER
+───────────────────────────────────────────── */
+const TYPE_LABELS = { full:'Full Day', morning:'Morning', afternoon:'Afternoon' };
+const TYPE_DAYS   = { full:1, morning:.5, afternoon:.5 };
+
+function renderVacations() {
+  const d      = getData();
+  const hmap   = buildHMap(d.holidays);
+  const blocks = groupVacations(d.vacations, d.holidays);
+  const used   = countDays(d.vacations, d.holidays);
+  const tot    = d.settings.totalDays;
+  const rem    = tot - used;
+  const hpd    = d.settings.dailyHours;
+
+  // Summary strip
+  document.getElementById('vsTrips').textContent = blocks.length;
+  document.getElementById('vsDays').textContent  = fmt(used);
+  document.getElementById('vsRem').textContent   = fmt(rem);
+  document.getElementById('vsHours').textContent = fmt(Math.max(0,rem)*hpd)+'h';
+
+  const el = document.getElementById('vacContent');
+
+  if (!blocks.length) {
+    el.innerHTML = `
+      <div class="vac-empty-state">
+        <span class="vac-empty-icon">🏖️</span>
+        <div class="vac-empty-title">No vacations planned yet</div>
+        <div class="vac-empty-sub">Click on any working day in the calendar to start adding days off. A range of consecutive days will appear here as a single vacation.</div>
+        <button class="vac-empty-cta" onclick="switchTab('cal')">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round"/></svg>
+          Open Calendar
+        </button>
+      </div>`;
+    return;
+  }
+
+  const html = blocks.map((entries, bi) => {
+    const startStr = entries[0].date;
+    const endStr   = entries[entries.length-1].date;
+    const range    = fmtRange(startStr, endStr);
+
+    // Count days in block (excluding full bank holidays within it)
+    let blockDays = 0;
+    const entryDates = new Set(entries.map(e=>e.date));
+
+    const dayRows = entries.map(({date,type}) => {
+      const [y,m,dd] = date.split('-');
+      const dateObj  = new Date(+y,+m-1,+dd);
+      const wd = dateObj.toLocaleDateString('en-GB',{weekday:'short'}).toUpperCase();
+      const dayNum   = parseInt(dd);
+
+      const h = hmap[date];
+      const isFullH = h && h.type==='full';
+      let dotCls='vbd-dot', countStr='', typeLbl=TYPE_LABELS[type];
+
+      if (isFullH) {
+        dotCls='vbd-dot hol'; countStr='holiday'; typeLbl=h.name;
+      } else if (h && h.type==='half') {
+        dotCls='vbd-dot half';
+        const v=Math.min(type==='full'?1:.5,.5);
+        blockDays+=v; countStr=fmt(v)+' day';
+      } else {
+        const v=TYPE_DAYS[type];
+        blockDays+=v; countStr=fmt(v)+' day';
+        if (type!=='full') dotCls='vbd-dot half';
+      }
+
+      return `<div class="vblock-day">
+        <span class="vbd-wd">${wd}</span>
+        <span class="vbd-num">${dayNum}.</span>
+        <div class="${dotCls}"></div>
+        <span class="vbd-type">${typeLbl}</span>
+        <span class="vbd-count">${countStr}</span>
+      </div>`;
+    }).join('');
+
+    const blockDaysFmt = fmt(blockDays);
+    const blockHours   = fmt(blockDays * hpd);
+    const badge        = blockDaysFmt + ' day' + (blockDays!==1?'s':'') + ' · ' + blockHours + 'h';
+    const datesJSON    = JSON.stringify(entries.map(e=>e.date));
+
+    return `<div class="vblock">
+      <div class="vblock-head">
+        <span class="vblock-range">${range}</span>
+        <span class="vblock-badge">${badge}</span>
+        <button class="vblock-rm" onclick="removeBlock('${encodeURIComponent(datesJSON)}')" title="Remove this vacation">×</button>
+      </div>
+      <div class="vblock-days">${dayRows}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="vblock-list">${html}</div>`;
+}
+
+function removeBlock(encodedDates) {
+  const dates = JSON.parse(decodeURIComponent(encodedDates));
+  const d = getData();
+  dates.forEach(dt => delete d.vacations[dt]);
+  saveData(d);
+  renderCalendar();
+  renderVacations();
+}
+
+/* ─────────────────────────────────────────────
+   CALENDAR
+───────────────────────────────────────────── */
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WDAYS =['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+function renderCalendar() {
+  const d=getData(), hmap=buildHMap(d.holidays);
+  const grid=document.getElementById('yearGrid');
+  grid.innerHTML='';
+  for (let m=0;m<12;m++) grid.appendChild(buildMonth(m,d.vacations,hmap));
+  renderBalance();
+}
+
+function buildMonth(mi,vacations,hmap) {
+  const card=document.createElement('div'); card.className='month-card';
+  const title=document.createElement('div'); title.className='month-name';
+  title.textContent=MONTHS[mi]; card.appendChild(title);
+  const wr=document.createElement('div'); wr.className='weekday-row';
+  WDAYS.forEach((wd,i)=>{
+    const l=document.createElement('div'); l.className='wd-lbl'+(i>=5?' we':'');
+    l.textContent=wd; wr.appendChild(l);
+  });
+  card.appendChild(wr);
+  const dg=document.createElement('div'); dg.className='days-grid';
+  const first=new Date(currentYear,mi,1),last=new Date(currentYear,mi+1,0);
+  let sow=first.getDay(); sow=sow===0?6:sow-1;
+  for (let i=0;i<sow;i++){const e=document.createElement('div');e.className='day empty';dg.appendChild(e);}
+  for (let day=1;day<=last.getDate();day++){
+    const date=new Date(currentYear,mi,day);
+    const dow=date.getDay(),isWE=(dow===0||dow===6),ds=toStr(date);
+    const isToday=date.getTime()===TODAY.getTime();
+    const holiday=hmap[ds],vacation=vacations[ds];
+    const cell=document.createElement('div'); cell.textContent=day;
+    const cls=['day'];
+    if(isWE){cls.push('weekend');}
+    else if(holiday&&holiday.type==='full'){cls.push('bh-full');cell.title=holiday.name;}
+    else if(holiday&&holiday.type==='half'){
+      cls.push('bh-half');cell.title=holiday.name+' (half day)';
+      cell.addEventListener('click',()=>openPopup(ds,vacation,true));
+    }else if(vacation){cls.push('vac-'+vacation);cell.addEventListener('click',()=>openPopup(ds,vacation));}
+    else{cell.title='Add time off';cell.addEventListener('click',()=>openPopup(ds,null));}
+    if(isToday)cls.push('today');
+    cell.className=cls.join(' '); dg.appendChild(cell);
+  }
+  card.appendChild(dg); return card;
+}
+
+/* ─────────────────────────────────────────────
+   POPUP
+───────────────────────────────────────────── */
+function openPopup(ds,existing,halfHol){
+  selectedDate=ds;
+  const [y,m,d]=ds.split('-');
+  const label=new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('popTitle').textContent=existing?'Edit Time Off':'Add Time Off';
+  document.getElementById('popDate').textContent=label+(halfHol?' · ½ bank holiday':'');
+  document.getElementById('rangeFrom').value=ds;
+  document.getElementById('rangeTo').value=ds;
+  document.getElementById('btnRemove').style.display=existing?'flex':'none';
+  hlType(existing);
+  document.getElementById('overlay').style.display='flex';
+}
+function hlType(sel){
+  ['Full','Morning','Afternoon'].forEach(t=>{
+    document.getElementById('dt'+t).className='dty-btn'+(sel===t.toLowerCase()?' sel':'');
+  });
+}
+function pickType(type){
+  const d=getData(); d.vacations[selectedDate]=type; saveData(d);
+  hlType(type);
+  document.getElementById('btnRemove').style.display='flex';
+  document.getElementById('popTitle').textContent='Edit Time Off';
+  renderCalendar();
+  if(currentTab==='vac') renderVacations();
+}
+function removeDay(){
+  const d=getData(); delete d.vacations[selectedDate]; saveData(d);
+  closePopup(); renderCalendar();
+  if(currentTab==='vac') renderVacations();
+}
+function addRange(){
+  const from=document.getElementById('rangeFrom').value;
+  const to  =document.getElementById('rangeTo').value;
+  if(!from||!to){alert('Please set both dates.');return;}
+  if(from>to){alert('"From" must be before "To".');return;}
+  const d=getData(),hmap=buildHMap(d.holidays);
+  let added=0;
+  const cur=new Date(from),end=new Date(to);
+  while(cur<=end){
+    const dow=cur.getDay(),isWE=(dow===0||dow===6),ds=toStr(cur),h=hmap[ds];
+    if(!isWE&&(!h||h.type==='half')){d.vacations[ds]='full';added++;}
+    cur.setDate(cur.getDate()+1);
+  }
+  saveData(d); closePopup(); renderCalendar();
+  if(currentTab==='vac') renderVacations();
+  if(!added) alert('No working days found in that range.');
+}
+function overlayClick(e){ if(e.target===document.getElementById('overlay')) closePopup(); }
+function closePopup(){ document.getElementById('overlay').style.display='none'; selectedDate=null; }
+
+/* ─────────────────────────────────────────────
+   YEAR NAV
+───────────────────────────────────────────── */
+async function changeYear(delta){ await setYear(currentYear+delta); }
+
+async function setYear(yr){
+  currentYear=yr;
+  document.getElementById('yearLabel').textContent=yr;
+  document.getElementById('holDate').min=`${yr}-01-01`;
+  document.getElementById('holDate').max=`${yr}-12-31`;
+  cache=await fetchYear(yr);
+  loadFields();
+  renderCalendar();
+  if(currentTab==='vac') renderVacations();
+  if(currentTab==='set') { renderHolList(); document.getElementById('holYearLbl').textContent=yr; document.getElementById('settingsYearLbl').textContent=yr; }
+}
+
+/* ─────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────── */
+async function main(){
+  const ok=await verifyAuth();
+  if(!ok) return;
+  await setYear(currentYear);
+  setTimeout(positionInd, 120);
+}
+
+main();
+</script>
+</body>
+</html>

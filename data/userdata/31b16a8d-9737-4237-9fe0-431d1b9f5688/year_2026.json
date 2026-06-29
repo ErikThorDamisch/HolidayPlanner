@@ -1,0 +1,74 @@
+{
+  "settings": {
+    "totalDays": 25,
+    "dailyHours": 8
+  },
+  "vacations": {
+    "2026-10-08": "full",
+    "2026-10-09": "full",
+    "2026-10-12": "full",
+    "2026-10-13": "full",
+    "2026-10-14": "full",
+    "2026-10-15": "full",
+    "2026-10-27": "full",
+    "2026-10-28": "full",
+    "2026-10-29": "full"
+  },
+  "holidays": [
+    {
+      "date": "2026-01-01",
+      "name": "New Year's Day",
+      "type": "full"
+    },
+    {
+      "date": "2026-04-03",
+      "name": "Good Friday",
+      "type": "full"
+    },
+    {
+      "date": "2026-04-06",
+      "name": "Easter Monday",
+      "type": "full"
+    },
+    {
+      "date": "2026-05-01",
+      "name": "Labour Day",
+      "type": "full"
+    },
+    {
+      "date": "2026-05-14",
+      "name": "Ascension Day",
+      "type": "full"
+    },
+    {
+      "date": "2026-05-25",
+      "name": "Whit Monday",
+      "type": "full"
+    },
+    {
+      "date": "2026-08-01",
+      "name": "Swiss National Day",
+      "type": "full"
+    },
+    {
+      "date": "2026-12-24",
+      "name": "Christmas Eve",
+      "type": "half"
+    },
+    {
+      "date": "2026-12-25",
+      "name": "Christmas Day",
+      "type": "full"
+    },
+    {
+      "date": "2026-12-26",
+      "name": "St. Stephen's Day",
+      "type": "full"
+    },
+    {
+      "date": "2026-12-31",
+      "name": "New Year's Eve",
+      "type": "half"
+    }
+  ]
+}
