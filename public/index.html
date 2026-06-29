@@ -608,6 +608,79 @@ body {
 .range-grp input:focus { border-color: var(--green); background: var(--surface); }
 .popup-footer { display: flex; gap: 8px; margin-top: 16px; }
 .popup-footer .btn { flex: 1; }
+
+/* ══ RESPONSIVE ═══════════════════════════════════════════════════════ */
+
+/* Tablet: 3-column grid */
+@media (max-width: 960px) {
+  .year-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Mobile ≤ 640px */
+@media (max-width: 640px) {
+  /* Topbar */
+  .topbar { padding: 0 14px; }
+  .user-name { display: none; }
+  .logout-btn { font-size: 11.5px; padding: 5px 9px; }
+
+  /* Subnav */
+  .subnav { padding: 0 10px; }
+  .tab-btn { padding: 6px 11px; font-size: 12.5px; }
+
+  /* Balance strip: ticks wrap to own row */
+  .balance-strip { padding: 12px 16px; }
+  .balance-inner { flex-wrap: wrap; gap: 8px; }
+  .bal-ticks-wrap { order: 3; flex: 0 0 100%; }
+  .bal-stats { flex: 1; order: 2; }
+  .bal-used { font-size: 28px; }
+
+  /* Calendar */
+  .cal-wrap { padding: 12px 10px 40px; }
+  .year-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .month-card { padding: 10px 8px; }
+  .month-name { font-size: 11.5px; margin-bottom: 8px; }
+  .day { font-size: 10.5px; }
+
+  /* Vacations view */
+  .vac-view-wrap { padding: 14px 12px 48px; }
+  .vac-summary { flex-wrap: wrap; gap: 0; }
+  .vs-div { display: none; }
+  .vs-item { flex: 1 1 50%; padding: 8px 0; }
+  .vs-num { font-size: 18px; }
+
+  /* Settings view */
+  .settings-wrap { padding: 14px 12px 48px; }
+  .scard-body { padding: 16px; }
+  .region-btns { grid-template-columns: 1fr; }
+
+  /* Popup: wider, sits just above keyboard */
+  .popup { width: calc(100vw - 24px); padding: 20px; }
+  .range-row { grid-template-columns: 1fr; gap: 8px; }
+}
+
+/* Small phone ≤ 420px: icon-only tabs + bottom-sheet popup */
+@media (max-width: 420px) {
+  .tab-btn-text { display: none; }
+  .tab-btn { padding: 8px 14px; }
+  .tab-btn svg { width: 18px; height: 18px; opacity: .7; }
+  .tab-btn.active svg { opacity: 1; }
+
+  /* Bottom sheet */
+  .overlay { align-items: flex-end; }
+  .popup {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px max(28px, env(safe-area-inset-bottom));
+    animation: slideUpSheet .2s ease;
+  }
+  @keyframes slideUpSheet {
+    from { transform: translateY(30px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .day-type-grid { gap: 6px; }
+  .dty-btn { padding: 10px 4px; }
+}
 </style>
 </head>
 <body>
@@ -637,17 +710,17 @@ body {
 
     <button class="tab-btn active" id="tCal" onclick="switchTab('cal')">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round"/></svg>
-      Calendar
+      <span class="tab-btn-text">Calendar</span>
     </button>
 
     <button class="tab-btn" id="tVac" onclick="switchTab('vac')">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17l4-4m0 0l2.5-6L16 3l-4 6.5L6 12zm4-4l2 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      My Vacations
+      <span class="tab-btn-text">My Vacations</span>
     </button>
 
     <button class="tab-btn" id="tSet" onclick="switchTab('set')">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke-linecap="round"/></svg>
-      Settings
+      <span class="tab-btn-text">Settings</span>
     </button>
   </div>
 
