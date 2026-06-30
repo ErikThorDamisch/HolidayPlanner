@@ -1078,7 +1078,7 @@ body {
       <div class="help-sec">
         <div class="help-sec-title"><span class="he-ico">🏝️</span> Booking & ranges</div>
         <p>To plan a longer trip, open any day and use <strong>Date Range</strong> — it fills
-          every working day between two dates and automatically skips weekends and public
+          every working day between two dates and automatically skips free weekends and public
           holidays. Consecutive days are grouped into one vacation.</p>
       </div>
 
@@ -1261,7 +1261,6 @@ function loadWeekendToggles() {
   highlightWeekend('sun', s.workSun || 'none');
 }
 function highlightWeekend(day, mode) {
-  const cap = day.charAt(0).toUpperCase() + day.slice(1);
   ['None','Half','Full'].forEach(m => {
     document.getElementById(day + m).className = (mode === m.toLowerCase()) ? 'on' : '';
   });
@@ -1269,6 +1268,15 @@ function highlightWeekend(day, mode) {
 function setWeekendWork(day, mode) {
   const d = getData();
   d.settings[day === 'sat' ? 'workSat' : 'workSun'] = mode;
+  // A day that becomes a (half/full) working weekend can no longer hold a one-off
+  // compensation day — drop any stale comp entries for that weekday so the balance
+  // doesn't keep counting a day the user can no longer see or remove.
+  if (mode !== 'none' && d.compDays) {
+    const dow = day === 'sat' ? 6 : 0;
+    for (const dt of Object.keys(d.compDays)) {
+      if (parseDate(dt).getDay() === dow) delete d.compDays[dt];
+    }
+  }
   saveData(d);
   highlightWeekend(day, mode);
   renderCalendar();
