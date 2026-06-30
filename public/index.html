@@ -92,7 +92,7 @@ body {
   bottom: 22px;
   transform: translate(-50%, 16px);
   max-width: min(90vw, 360px);
-  background: var(--ink);
+  background: var(--green);
   color: #fff;
   padding: 11px 16px;
   border-radius: 10px;
@@ -1702,19 +1702,22 @@ function downloadICS(filename, events) {
 
   const blob = new Blob([lines.join('\r\n')], { type:'text/calendar' });
   const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 
-  const n = events.length;
-  showToast(
-    'Export gestartet — ' + filename,
-    n + (n === 1 ? ' Termin' : ' Termine') + '. Auf Tablets wird die .ics-Datei oft direkt in der Kalender-App geöffnet statt im Download-Ordner gespeichert.'
-  );
+  // Try to open the .ics directly so the device offers "add to calendar".
+  // Falls back to a normal download if the browser blocks the new tab.
+  const win = window.open(url, '_blank');
+  if (!win) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  // Keep the URL alive long enough for the opened tab / calendar app to read it.
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+  showToast('Download gestartet');
 }
 
 // Export every vacation of the current year (one event per block).
