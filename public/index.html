@@ -264,8 +264,18 @@ body {
   position: relative; user-select: none;
 }
 .day.empty   { cursor: default; }
-.day.weekend { background: var(--accent-bg); color: var(--accent); font-weight: 600; cursor: default; }
+.day.weekend { background: var(--accent-bg); color: var(--accent); font-weight: 600; cursor: pointer; }
+.day.weekend:hover { background: #dfe3f5; }
 .day:not(.empty):not(.weekend):not(.bh-full):hover { background: var(--green-bg); }
+/* Free weekend day marked as worked (earns a compensation day) */
+.day.comp-day { background: var(--green-bg); color: var(--green-dark); }
+.day.comp-day:hover { background: #d4f5e6; }
+.day.comp-day::before {
+  content: '+'; position: absolute;
+  top: 0; right: 3px;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  color: var(--green-dark);
+}
 .day.today { font-weight: 700; color: var(--accent); }
 .day.today::after {
   content: ''; position: absolute;
@@ -399,6 +409,17 @@ body {
   transition: color .12s; flex-shrink: 0;
 }
 .vblock-rm:hover { color: var(--red); }
+
+.vblock-export {
+  background: none; border: none;
+  cursor: pointer;
+  color: #7bbfa0;
+  padding: 2px 4px; border-radius: 4px;
+  transition: color .12s; flex-shrink: 0;
+  display: flex; align-items: center;
+}
+.vblock-export:hover { color: var(--green-dark); }
+.vblock-export svg { width: 16px; height: 16px; }
 
 /* Day rows inside block */
 .vblock-days { padding: 0; }
@@ -819,7 +840,13 @@ body {
     <div class="scard">
       <div class="scard-head">
         <span class="scard-title">Public Holidays</span>
-        <span style="font-size:11.5px;color:var(--ink-soft)" id="holYearLbl"></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-ghost btn-sm" onclick="exportHolidays()" title="Export all bank holidays as .ics">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M3 15v1a1 1 0 001 1h12a1 1 0 001-1v-1"/></svg>
+            .ics
+          </button>
+          <span style="font-size:11.5px;color:var(--ink-soft)" id="holYearLbl"></span>
+        </div>
       </div>
       <div class="scard-body">
         <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px">
@@ -961,6 +988,26 @@ body {
   </div>
 </div>
 
+<!-- ── Compensation-day Popup (worked on a free weekend) ─────────────── -->
+<div class="overlay" id="compOverlay" style="display:none" onclick="compOverlayClick(event)">
+  <div class="popup">
+    <div class="popup-title">Worked on a day off</div>
+    <div class="popup-sub" id="compDate"></div>
+    <div class="popup-lbl">Compensation earned</div>
+    <div class="day-type-grid" style="grid-template-columns:1fr 1fr">
+      <div class="dty-btn" id="compFull" onclick="pickComp(1)"><div class="dty-icon">📅</div>Full day<br>+1 day</div>
+      <div class="dty-btn" id="compHalf" onclick="pickComp(0.5)"><div class="dty-icon">🌓</div>Half day<br>+0.5 day</div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-soft);line-height:1.5">
+      A compensation day is added to your vacation balance for this year.
+    </p>
+    <div class="popup-footer">
+      <button class="btn btn-danger" id="compRemove" onclick="removeComp()" style="display:none">Remove</button>
+      <button class="btn btn-ghost"  onclick="closeCompPopup()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ─────────────────────────────────────────────
    AUTH
@@ -1061,7 +1108,7 @@ async function pushYear(yr, data) {
   } catch(e) { setSync('error'); }
 }
 
-function defaultData() { return { settings:{totalDays:25,dailyHours:8,workSat:'none',workSun:'none'}, vacations:{}, holidays:[] }; }
+function defaultData() { return { settings:{totalDays:25,dailyHours:8,workSat:'none',workSun:'none'}, vacations:{}, holidays:[], compDays:{} }; }
 function getData()      { return cache || defaultData(); }
 function saveData(data) {
   cache = data;
@@ -1149,6 +1196,15 @@ function dayCapacity(dateObj, holiday) {
   return base;
 }
 
+// Sum of compensation days (worked days off) earned for the current year.
+function compTotal() {
+  const comp = getData().compDays || {};
+  const yp = String(currentYear)+'-';
+  let s = 0;
+  for (const [dt, amt] of Object.entries(comp)) { if (dt.startsWith(yp)) s += amt; }
+  return s;
+}
+
 function countDays(vacations, holidays) {
   const hmap=buildHMap(holidays), yp=String(currentYear)+'-';
   let n=0;
@@ -1168,7 +1224,8 @@ function countDays(vacations, holidays) {
 function renderBalance() {
   const d    = getData();
   const used = countDays(d.vacations, d.holidays);
-  const tot  = d.settings.totalDays;
+  const comp = compTotal();
+  const tot  = d.settings.totalDays + comp;
   const hpd  = d.settings.dailyHours;
   const rem  = tot - used;
   const yp   = String(currentYear)+'-';
@@ -1177,7 +1234,8 @@ function renderBalance() {
   document.getElementById('balUsed').textContent = fmt(used);
   document.getElementById('balTotal').textContent= fmt(tot);
   document.getElementById('balMain').textContent = fmt(rem)+' day'+(rem!==1?'s':'')+' left';
-  document.getElementById('balSub').textContent  = fmt(Math.max(0,rem)*hpd)+'h remaining';
+  document.getElementById('balSub').textContent  = fmt(Math.max(0,rem)*hpd)+'h remaining'
+    + (comp>0 ? ' · incl. +'+fmt(comp)+' comp' : '');
 
   const ticks = document.getElementById('balTicks');
   ticks.innerHTML = '';
@@ -1401,7 +1459,7 @@ function renderVacations() {
   const hmap   = buildHMap(d.holidays);
   const blocks = groupVacations(d.vacations, d.holidays);
   const used   = countDays(d.vacations, d.holidays);
-  const tot    = d.settings.totalDays;
+  const tot    = d.settings.totalDays + compTotal();
   const rem    = tot - used;
   const hpd    = d.settings.dailyHours;
 
@@ -1473,6 +1531,9 @@ function renderVacations() {
       <div class="vblock-head">
         <span class="vblock-range">${range}</span>
         <span class="vblock-badge">${badge}</span>
+        <button class="vblock-export" onclick="exportBlock('${encodeURIComponent(datesJSON)}')" title="Export this vacation as .ics">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M3 15v1a1 1 0 001 1h12a1 1 0 001-1v-1"/></svg>
+        </button>
         <button class="vblock-rm" onclick="removeBlock('${encodeURIComponent(datesJSON)}')" title="Remove this vacation">×</button>
       </div>
       <div class="vblock-days">${dayRows}</div>
@@ -1500,59 +1561,94 @@ function icsEsc(s) {
 function icsDate(ds) { return ds.replace(/-/g,''); }          // YYYY-MM-DD → YYYYMMDD
 function nextDay(ds) { const d=parseDate(ds); d.setDate(d.getDate()+1); return toStr(d); }
 
-function exportICS() {
-  const d      = getData();
-  const blocks = groupVacations(d.vacations, d.holidays);
-  if (!blocks.length) { alert('No vacations to export for ' + currentYear + '.'); return; }
+// Build one all-day VEVENT from a vacation block (array of {date,type}).
+function blockToEvent(entries, idx) {
+  const d = getData(), hmap = buildHMap(d.holidays), hpd = d.settings.dailyHours;
+  const startStr = entries[0].date;
+  const endStr   = entries[entries.length-1].date;
+  let blockDays = 0;
+  const descLines = [];
+  entries.forEach(({date,type}) => {
+    const h = hmap[date];
+    if (h && h.type === 'full') { descLines.push(fmtDate(date)+': '+h.name+' (holiday)'); return; }
+    const v = Math.min(TYPE_DAYS[type], dayCapacity(parseDate(date), h));
+    blockDays += v;
+    descLines.push(fmtDate(date)+': '+TYPE_LABELS[type]+' ('+fmt(v)+'d)');
+  });
+  return {
+    uid: 'hp-vac-'+startStr+'-'+endStr+'-'+idx+'@holidayplanner',
+    start: startStr,
+    end: endStr,
+    summary: 'Holiday — ' + fmt(blockDays) + 'd / ' + fmt(blockDays*hpd) + 'h',
+    description: descLines.join('\n')
+  };
+}
 
-  const hmap = buildHMap(d.holidays);
-  const hpd  = d.settings.dailyHours;
-  const now  = new Date();
-  const p    = n => String(n).padStart(2,'0');
+// Turn a list of events ({uid,start,end,summary,description}) into a downloaded .ics file.
+function downloadICS(filename, events) {
+  if (!events.length) { alert('Nothing to export.'); return; }
+  const now = new Date(), p = n => String(n).padStart(2,'0');
   const stamp = now.getUTCFullYear()+p(now.getUTCMonth()+1)+p(now.getUTCDate())+'T'
               + p(now.getUTCHours())+p(now.getUTCMinutes())+p(now.getUTCSeconds())+'Z';
-
   const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Holiday Planner//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
-
-  blocks.forEach((entries, bi) => {
-    const startStr = entries[0].date;
-    const endStr   = entries[entries.length-1].date;
-
-    let blockDays = 0;
-    const descLines = [];
-    entries.forEach(({date,type}) => {
-      const h = hmap[date];
-      if (h && h.type === 'full') { descLines.push(fmtDate(date)+': '+h.name+' (holiday)'); return; }
-      const v = Math.min(TYPE_DAYS[type], dayCapacity(parseDate(date), h));
-      blockDays += v;
-      descLines.push(fmtDate(date)+': '+TYPE_LABELS[type]+' ('+fmt(v)+'d)');
-    });
-
-    const summary = 'Holiday — ' + fmt(blockDays) + 'd / ' + fmt(blockDays*hpd) + 'h';
+  events.forEach(ev => {
     lines.push(
       'BEGIN:VEVENT',
-      'UID:hp-'+startStr+'-'+endStr+'-'+bi+'@holidayplanner',
+      'UID:'+ev.uid,
       'DTSTAMP:'+stamp,
-      'DTSTART;VALUE=DATE:'+icsDate(startStr),
-      'DTEND;VALUE=DATE:'+icsDate(nextDay(endStr)),   // DTEND is exclusive for all-day events
-      'SUMMARY:'+icsEsc(summary),
-      'DESCRIPTION:'+icsEsc(descLines.join('\n')),
+      'DTSTART;VALUE=DATE:'+icsDate(ev.start),
+      'DTEND;VALUE=DATE:'+icsDate(nextDay(ev.end)),   // DTEND is exclusive for all-day events
+      'SUMMARY:'+icsEsc(ev.summary),
+      'DESCRIPTION:'+icsEsc(ev.description||''),
       'TRANSP:TRANSPARENT',
       'END:VEVENT'
     );
   });
-
   lines.push('END:VCALENDAR');
 
   const blob = new Blob([lines.join('\r\n')], { type:'text/calendar' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = 'holidays-' + currentYear + '.ics';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// Export every vacation of the current year (one event per block).
+function exportICS() {
+  const d = getData();
+  const blocks = groupVacations(d.vacations, d.holidays);
+  if (!blocks.length) { alert('No vacations to export for ' + currentYear + '.'); return; }
+  downloadICS('holidays-'+currentYear+'.ics', blocks.map((b,i)=>blockToEvent(b,i)));
+}
+
+// Export a single vacation block (used by the per-vacation button).
+function exportBlock(encodedDates) {
+  const dates = JSON.parse(decodeURIComponent(encodedDates));
+  const d = getData();
+  const entries = dates.map(dt => ({ date: dt, type: d.vacations[dt] })).filter(e => e.type);
+  if (!entries.length) { alert('This vacation is empty.'); return; }
+  downloadICS('holiday-'+entries[0].date+'.ics', [blockToEvent(entries, 0)]);
+}
+
+// Export all bank holidays of the current year (one event each).
+function exportHolidays() {
+  const d = getData();
+  const hols = (d.holidays || []).filter(h => h.date.startsWith(String(currentYear)+'-'));
+  if (!hols.length) { alert('No bank holidays to export for ' + currentYear + '.'); return; }
+  const events = hols.map((h, i) => ({
+    uid: 'hp-hol-'+h.date+'-'+i+'@holidayplanner',
+    start: h.date,
+    end: h.date,
+    summary: h.name + (h.type === 'half' ? ' (½ day)' : ''),
+    description: h.type === 'half'
+      ? 'Half bank holiday (' + (h.halfPeriod||'afternoon') + ')'
+      : 'Bank holiday'
+  }));
+  downloadICS('bank-holidays-'+currentYear+'.ics', events);
 }
 
 /* ─────────────────────────────────────────────
@@ -1598,7 +1694,17 @@ function buildMonth(mi,vacations,hmap) {
       if(wMode==='half') cls.push('half-we');
       cell.title=(dow===6?'Saturday':'Sunday')+(wMode==='half'?' · half working day':' · working day');
     }
-    if(isWE){cls.push('weekend');}
+    if(isWE){
+      cls.push('weekend');
+      const comp=(getData().compDays||{})[ds];
+      if(comp){
+        cls.push('comp-day');
+        cell.title=(dow===6?'Saturday':'Sunday')+' worked — +'+fmt(comp)+' compensation day';
+      } else {
+        cell.title='Worked this '+(dow===6?'Saturday':'Sunday')+'? Earn a compensation day';
+      }
+      cell.addEventListener('click',()=>openCompPopup(ds));
+    }
     else if(holiday&&holiday.type==='full'){cls.push('bh-full');cell.title=holiday.name;}
     else if(holiday&&holiday.type==='half'){
       // Which half is the bank holiday? Default to afternoon.
@@ -1725,6 +1831,48 @@ function closePopup(){
   document.getElementById('overlay').style.display='none';
   selectedDate=null;
 }
+
+/* ─────────────────────────────────────────────
+   COMPENSATION DAYS (worked on a free weekend)
+───────────────────────────────────────────── */
+let compDate = null;
+
+function openCompPopup(ds){
+  compDate = ds;
+  const label = parseDate(ds).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('compDate').textContent = label;
+  const cur = (getData().compDays||{})[ds] || null;
+  hlComp(cur);
+  document.getElementById('compRemove').style.display = cur ? 'flex' : 'none';
+  document.getElementById('compOverlay').style.display = 'flex';
+}
+function hlComp(amt){
+  document.getElementById('compFull').className = 'dty-btn'+(amt===1   ? ' sel':'');
+  document.getElementById('compHalf').className = 'dty-btn'+(amt===0.5 ? ' sel':'');
+}
+function pickComp(amt){
+  const d = getData();
+  if (!d.compDays) d.compDays = {};
+  d.compDays[compDate] = amt;
+  saveData(d);
+  hlComp(amt);
+  document.getElementById('compRemove').style.display = 'flex';
+  renderCalendar();
+  if (currentTab==='vac') renderVacations();
+}
+function removeComp(){
+  const d = getData();
+  if (d.compDays) delete d.compDays[compDate];
+  saveData(d);
+  closeCompPopup();
+  renderCalendar();
+  if (currentTab==='vac') renderVacations();
+}
+function closeCompPopup(){
+  document.getElementById('compOverlay').style.display='none';
+  compDate=null;
+}
+function compOverlayClick(e){ if(e.target===document.getElementById('compOverlay')) closeCompPopup(); }
 
 /* ─────────────────────────────────────────────
    YEAR NAV
