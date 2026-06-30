@@ -114,7 +114,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 // ── Data routes ───────────────────────────────────────────────────────────────
 
 function defaultYearData() {
-    return { settings: { totalDays: 25, dailyHours: 8 }, vacations: {}, holidays: [] };
+    return { settings: { totalDays: 25, dailyHours: 8, workSat: 'none', workSun: 'none' }, vacations: {}, holidays: [] };
 }
 
 // GET /api/year/:year

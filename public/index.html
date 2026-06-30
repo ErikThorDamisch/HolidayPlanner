@@ -276,6 +276,14 @@ body {
 .day.vac-full:hover { background: #29a874; }
 .day.vac-morning   { background: linear-gradient(to right, var(--green) 50%, transparent 50%); font-weight: 600; color: var(--ink); }
 .day.vac-afternoon { background: linear-gradient(to right, transparent 50%, var(--green) 50%); font-weight: 600; color: var(--ink); }
+/* Weekend day that is configured as a working day (still bookable) */
+.day.work-we { box-shadow: inset 0 0 0 1.5px var(--accent-bg); }
+.day.work-we.half-we::before {
+  content: ''; position: absolute;
+  bottom: 2px; right: 2px;
+  width: 4px; height: 4px;
+  background: var(--accent); border-radius: 50%; opacity: .5;
+}
 .day.bh-full  { background: var(--amber-bg); color: var(--amber-dark); font-weight: 600; cursor: default; }
 .day.bh-half  { background: linear-gradient(to right, var(--amber-bg) 50%, transparent 50%); color: var(--amber-dark); font-weight: 600; cursor: pointer; }
 
@@ -532,6 +540,11 @@ body {
 }
 .half-toggle button.on { background: var(--ink); color: #fff; }
 
+/* Weekend working-day rows */
+.weekend-row { display: flex; align-items: center; gap: 12px; }
+.weekend-day-lbl { font-size: 13px; font-weight: 600; color: var(--ink); width: 72px; flex-shrink: 0; }
+.weekend-toggle { flex: 1; max-width: 280px; }
+
 /* Settings fields */
 .field { margin-bottom: 16px; }
 .field:last-child { margin-bottom: 0; }
@@ -719,7 +732,7 @@ body {
     </button>
 
     <button class="tab-btn" id="tSet" onclick="switchTab('set')">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span class="tab-btn-text">Settings</span>
     </button>
   </div>
@@ -874,6 +887,47 @@ body {
             <span class="field-unit">hours / day</span>
           </div>
         </div>
+        <div class="field">
+          <label class="field-label">Weekend working days</label>
+          <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px">
+            If you work on a Saturday or Sunday, mark it here. Those days then become bookable
+            and count towards your used vacation — a half day counts as 0.5.
+          </p>
+          <div class="weekend-row">
+            <span class="weekend-day-lbl">Saturday</span>
+            <div class="half-toggle weekend-toggle">
+              <button id="satNone" class="on" onclick="setWeekendWork('sat','none')">Off</button>
+              <button id="satHalf"          onclick="setWeekendWork('sat','half')">½ day</button>
+              <button id="satFull"          onclick="setWeekendWork('sat','full')">Full</button>
+            </div>
+          </div>
+          <div class="weekend-row" style="margin-top:8px">
+            <span class="weekend-day-lbl">Sunday</span>
+            <div class="half-toggle weekend-toggle">
+              <button id="sunNone" class="on" onclick="setWeekendWork('sun','none')">Off</button>
+              <button id="sunHalf"          onclick="setWeekendWork('sun','half')">½ day</button>
+              <button id="sunFull"          onclick="setWeekendWork('sun','full')">Full</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="scard">
+      <div class="scard-head">
+        <span class="scard-title">Export</span>
+        <span style="font-size:11.5px;color:var(--ink-soft)" id="exportYearLbl"></span>
+      </div>
+      <div class="scard-body">
+        <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px">
+          Download your planned vacations for this year as an <strong>.ics</strong> calendar file.
+          Import it into Google Calendar, Outlook or Apple Calendar to see your time off everywhere.
+        </p>
+        <button class="btn btn-accent" onclick="exportICS()">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5M3 15v1a1 1 0 001 1h12a1 1 0 001-1v-1"/></svg>
+          Download .ics
+        </button>
       </div>
     </div>
 
@@ -898,7 +952,7 @@ body {
       <div class="range-grp"><label>To</label>  <input type="date" id="rangeTo"></div>
     </div>
     <button class="btn btn-accent" style="width:100%" onclick="addRange()">
-      Add range — skip weekends &amp; holidays
+      Add range — skip free weekends &amp; holidays
     </button>
     <div class="popup-footer">
       <button class="btn btn-danger" id="btnRemove" onclick="removeDay()" style="display:none">Remove</button>
@@ -956,8 +1010,10 @@ function switchTab(tab) {
   if (tab === 'vac') renderVacations();
   if (tab === 'set') {
     renderHolList();
+    loadWeekendToggles();
     document.getElementById('holYearLbl').textContent = currentYear;
     document.getElementById('settingsYearLbl').textContent = currentYear;
+    document.getElementById('exportYearLbl').textContent = currentYear;
   }
 }
 
@@ -1005,7 +1061,7 @@ async function pushYear(yr, data) {
   } catch(e) { setSync('error'); }
 }
 
-function defaultData() { return { settings:{totalDays:25,dailyHours:8}, vacations:{}, holidays:[] }; }
+function defaultData() { return { settings:{totalDays:25,dailyHours:8,workSat:'none',workSun:'none'}, vacations:{}, holidays:[] }; }
 function getData()      { return cache || defaultData(); }
 function saveData(data) {
   cache = data;
@@ -1020,12 +1076,36 @@ function loadFields() {
   const d = getData();
   document.getElementById('totalDays').value  = d.settings.totalDays;
   document.getElementById('dailyHours').value = d.settings.dailyHours;
+  loadWeekendToggles();
 }
 function saveFields() {
   const d = getData();
   d.settings.totalDays  = parseFloat(document.getElementById('totalDays').value)  || 25;
   d.settings.dailyHours = parseFloat(document.getElementById('dailyHours').value) || 8;
   saveData(d); renderBalance();
+}
+
+/* ─────────────────────────────────────────────
+   WEEKEND WORKING DAYS
+───────────────────────────────────────────── */
+function loadWeekendToggles() {
+  const s = getData().settings;
+  highlightWeekend('sat', s.workSat || 'none');
+  highlightWeekend('sun', s.workSun || 'none');
+}
+function highlightWeekend(day, mode) {
+  const cap = day.charAt(0).toUpperCase() + day.slice(1);
+  ['None','Half','Full'].forEach(m => {
+    document.getElementById(day + m).className = (mode === m.toLowerCase()) ? 'on' : '';
+  });
+}
+function setWeekendWork(day, mode) {
+  const d = getData();
+  d.settings[day === 'sat' ? 'workSat' : 'workSun'] = mode;
+  saveData(d);
+  highlightWeekend(day, mode);
+  renderCalendar();
+  if (currentTab === 'vac') renderVacations();
 }
 document.getElementById('totalDays').addEventListener('change', saveFields);
 document.getElementById('dailyHours').addEventListener('change', saveFields);
@@ -1039,16 +1119,45 @@ function toStr(d) {
 function fmtDate(s)  { const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; }
 function fmt(n)      { return Number.isInteger(n)?String(n):n.toFixed(1); }
 function buildHMap(holidays) { const m={}; holidays.forEach(h=>{ m[h.date]=h; }); return m; }
+function parseDate(ds) { const [y,m,d]=ds.split('-'); return new Date(+y,+m-1,+d); }
+
+// Weekend working mode for a given weekday number (0=Sun … 6=Sat): 'none' | 'half' | 'full'
+function weekendMode(dow) {
+  const s = getData().settings;
+  if (dow === 6) return s.workSat || 'none';
+  if (dow === 0) return s.workSun || 'none';
+  return 'none';
+}
+// Is this weekend day configured as a (full or half) working day?
+function isWorkingWeekend(dow) {
+  return (dow === 0 || dow === 6) && weekendMode(dow) !== 'none';
+}
+// Maximum vacation value a date can carry (0 = not bookable / not counted).
+// Accounts for weekends, weekend-work settings and bank holidays.
+function dayCapacity(dateObj, holiday) {
+  if (holiday && holiday.type === 'full') return 0;
+  const dow = dateObj.getDay();
+  let base;
+  if (dow === 0 || dow === 6) {
+    const mode = weekendMode(dow);
+    if (mode === 'none') return 0;
+    base = mode === 'half' ? 0.5 : 1;
+  } else {
+    base = 1;
+  }
+  if (holiday && holiday.type === 'half') base = Math.min(base, 0.5);
+  return base;
+}
 
 function countDays(vacations, holidays) {
   const hmap=buildHMap(holidays), yp=String(currentYear)+'-';
   let n=0;
   for (const [date,type] of Object.entries(vacations)) {
     if (!date.startsWith(yp)) continue;
-    const h=hmap[date];
-    if (h && h.type==='full') continue;
-    const v=type==='full'?1:.5;
-    n += (h && h.type==='half') ? Math.min(v,.5) : v;
+    const cap = dayCapacity(parseDate(date), hmap[date]);
+    if (cap <= 0) continue;
+    const v = type==='full'?1:.5;
+    n += Math.min(v, cap);
   }
   return n;
 }
@@ -1076,10 +1185,10 @@ function renderBalance() {
     .filter(([dt])=>dt.startsWith(yp))
     .sort(([a],[b])=>a.localeCompare(b))
     .map(([dt,type])=>{
-      const h=hmap[dt];
-      if (h && h.type==='full') return 0;
+      const cap = dayCapacity(parseDate(dt), hmap[dt]);
+      if (cap <= 0) return 0;
       const v=type==='full'?1:.5;
-      return (h && h.type==='half') ? Math.min(v,.5) : v;
+      return Math.min(v, cap);
     })
     .filter(v=>v>0);
 
@@ -1244,10 +1353,11 @@ function groupVacations(vacations, holidays) {
     while (walker < next) {
       const ds  = toStr(walker);
       const dow = walker.getDay();
-      const isWE  = (dow===0||dow===6);
+      // A weekend day configured as a working day counts as a working day here.
+      const isFreeWE = (dow===0||dow===6) && !isWorkingWeekend(dow);
       const h     = hmap[ds];
       const isFH  = h && h.type==='full';
-      if (!isWE && !isFH) { canMerge=false; break; }
+      if (!isFreeWE && !isFH) { canMerge=false; break; }
       walker.setDate(walker.getDate()+1);
     }
 
@@ -1338,14 +1448,11 @@ function renderVacations() {
 
       if (isFullH) {
         dotCls='vbd-dot hol'; countStr='holiday'; typeLbl=h.name;
-      } else if (h && h.type==='half') {
-        dotCls='vbd-dot half';
-        const v=Math.min(type==='full'?1:.5,.5);
-        blockDays+=v; countStr=fmt(v)+' day';
       } else {
-        const v=TYPE_DAYS[type];
+        const cap = dayCapacity(dateObj, h);
+        const v   = Math.min(TYPE_DAYS[type], cap);
         blockDays+=v; countStr=fmt(v)+' day';
-        if (type!=='full') dotCls='vbd-dot half';
+        if (v < 1) dotCls='vbd-dot half';
       }
 
       return `<div class="vblock-day">
@@ -1385,6 +1492,70 @@ function removeBlock(encodedDates) {
 }
 
 /* ─────────────────────────────────────────────
+   ICS EXPORT
+───────────────────────────────────────────── */
+function icsEsc(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+}
+function icsDate(ds) { return ds.replace(/-/g,''); }          // YYYY-MM-DD → YYYYMMDD
+function nextDay(ds) { const d=parseDate(ds); d.setDate(d.getDate()+1); return toStr(d); }
+
+function exportICS() {
+  const d      = getData();
+  const blocks = groupVacations(d.vacations, d.holidays);
+  if (!blocks.length) { alert('No vacations to export for ' + currentYear + '.'); return; }
+
+  const hmap = buildHMap(d.holidays);
+  const hpd  = d.settings.dailyHours;
+  const now  = new Date();
+  const p    = n => String(n).padStart(2,'0');
+  const stamp = now.getUTCFullYear()+p(now.getUTCMonth()+1)+p(now.getUTCDate())+'T'
+              + p(now.getUTCHours())+p(now.getUTCMinutes())+p(now.getUTCSeconds())+'Z';
+
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Holiday Planner//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+
+  blocks.forEach((entries, bi) => {
+    const startStr = entries[0].date;
+    const endStr   = entries[entries.length-1].date;
+
+    let blockDays = 0;
+    const descLines = [];
+    entries.forEach(({date,type}) => {
+      const h = hmap[date];
+      if (h && h.type === 'full') { descLines.push(fmtDate(date)+': '+h.name+' (holiday)'); return; }
+      const v = Math.min(TYPE_DAYS[type], dayCapacity(parseDate(date), h));
+      blockDays += v;
+      descLines.push(fmtDate(date)+': '+TYPE_LABELS[type]+' ('+fmt(v)+'d)');
+    });
+
+    const summary = 'Holiday — ' + fmt(blockDays) + 'd / ' + fmt(blockDays*hpd) + 'h';
+    lines.push(
+      'BEGIN:VEVENT',
+      'UID:hp-'+startStr+'-'+endStr+'-'+bi+'@holidayplanner',
+      'DTSTAMP:'+stamp,
+      'DTSTART;VALUE=DATE:'+icsDate(startStr),
+      'DTEND;VALUE=DATE:'+icsDate(nextDay(endStr)),   // DTEND is exclusive for all-day events
+      'SUMMARY:'+icsEsc(summary),
+      'DESCRIPTION:'+icsEsc(descLines.join('\n')),
+      'TRANSP:TRANSPARENT',
+      'END:VEVENT'
+    );
+  });
+
+  lines.push('END:VCALENDAR');
+
+  const blob = new Blob([lines.join('\r\n')], { type:'text/calendar' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'holidays-' + currentYear + '.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ─────────────────────────────────────────────
    CALENDAR
 ───────────────────────────────────────────── */
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1414,11 +1585,19 @@ function buildMonth(mi,vacations,hmap) {
   for (let i=0;i<sow;i++){const e=document.createElement('div');e.className='day empty';dg.appendChild(e);}
   for (let day=1;day<=last.getDate();day++){
     const date=new Date(currentYear,mi,day);
-    const dow=date.getDay(),isWE=(dow===0||dow===6),ds=toStr(date);
+    const dow=date.getDay(),ds=toStr(date);
+    const wMode=weekendMode(dow);
+    const workWE=(dow===0||dow===6)&&wMode!=='none';   // weekend day that's actually worked
+    const isWE=(dow===0||dow===6)&&!workWE;            // free (non-working) weekend day
     const isToday=date.getTime()===TODAY.getTime();
     const holiday=hmap[ds],vacation=vacations[ds];
     const cell=document.createElement('div'); cell.textContent=day;
     const cls=['day'];
+    if(workWE){
+      cls.push('work-we');
+      if(wMode==='half') cls.push('half-we');
+      cell.title=(dow===6?'Saturday':'Sunday')+(wMode==='half'?' · half working day':' · working day');
+    }
     if(isWE){cls.push('weekend');}
     else if(holiday&&holiday.type==='full'){cls.push('bh-full');cell.title=holiday.name;}
     else if(holiday&&holiday.type==='half'){
@@ -1521,8 +1700,9 @@ function addRange(){
   let added=0;
   const cur=new Date(from),end=new Date(to);
   while(cur<=end){
-    const dow=cur.getDay(),isWE=(dow===0||dow===6),ds=toStr(cur),h=hmap[ds];
-    if(!isWE&&(!h||h.type==='half')){
+    const dow=cur.getDay(),ds=toStr(cur),h=hmap[ds];
+    const isFreeWE=(dow===0||dow===6)&&!isWorkingWeekend(dow);
+    if(!isFreeWE&&(!h||h.type==='half')){
       // For half-day holidays, book the non-holiday half automatically
       const vacType = (h && h.type==='half')
         ? ((h.halfPeriod||'afternoon')==='afternoon' ? 'morning' : 'afternoon')
@@ -1560,7 +1740,7 @@ async function setYear(yr){
   loadFields();
   renderCalendar();
   if(currentTab==='vac') renderVacations();
-  if(currentTab==='set') { renderHolList(); document.getElementById('holYearLbl').textContent=yr; document.getElementById('settingsYearLbl').textContent=yr; }
+  if(currentTab==='set') { renderHolList(); loadWeekendToggles(); document.getElementById('holYearLbl').textContent=yr; document.getElementById('settingsYearLbl').textContent=yr; document.getElementById('exportYearLbl').textContent=yr; }
 }
 
 /* ─────────────────────────────────────────────
