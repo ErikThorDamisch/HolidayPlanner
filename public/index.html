@@ -85,6 +85,28 @@ body {
 .sync-dot.saved  { background: var(--green); }
 .sync-dot.error  { background: var(--red); }
 
+/* Toast — transient confirmation (e.g. after an export) */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translate(-50%, 16px);
+  max-width: min(90vw, 360px);
+  background: var(--ink);
+  color: #fff;
+  padding: 11px 16px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(10,14,26,.28);
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 1000;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast-sub { display: block; margin-top: 3px; font-size: 11.5px; opacity: .75; }
+
 .user-chip {
   display: flex; align-items: center; gap: 7px;
   background: rgba(255,255,255,.08);
@@ -767,6 +789,9 @@ body {
 </style>
 </head>
 <body>
+
+<!-- Transient confirmation toast (export, etc.) -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- ── Top Bar ──────────────────────────────────────────────────── -->
 <header class="topbar">
@@ -1642,6 +1667,17 @@ function blockToEvent(entries, idx) {
   };
 }
 
+// Show a brief, self-dismissing confirmation toast.
+let toastTimer = null;
+function showToast(msg, sub) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.innerHTML = msg + (sub ? '<span class="toast-sub">'+sub+'</span>' : '');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
 // Turn a list of events ({uid,start,end,summary,description}) into a downloaded .ics file.
 function downloadICS(filename, events) {
   if (!events.length) { alert('Nothing to export.'); return; }
@@ -1673,6 +1709,12 @@ function downloadICS(filename, events) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+
+  const n = events.length;
+  showToast(
+    'Export gestartet — ' + filename,
+    n + (n === 1 ? ' Termin' : ' Termine') + '. Auf Tablets wird die .ics-Datei oft direkt in der Kalender-App geöffnet statt im Download-Ordner gespeichert.'
+  );
 }
 
 // Export every vacation of the current year (one event per block).
