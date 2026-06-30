@@ -115,6 +115,20 @@ body {
 }
 .logout-btn:hover { color: #fff; border-color: rgba(255,255,255,.35); }
 
+.help-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 50%;
+  color: rgba(255,255,255,.6);
+  cursor: pointer;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.help-btn svg { width: 17px; height: 17px; }
+.help-btn:hover { color: #fff; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.14); }
+
 /* ── Sub Nav ─────────────────────────────────────────────────────── */
 .subnav {
   background: var(--surface);
@@ -615,6 +629,41 @@ body {
   from { transform: translateY(10px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+.popup.help-popup {
+  width: 440px;
+  max-height: 82vh;
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.help-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.help-head .popup-title { margin: 0; font-size: 16px; }
+.help-body { padding: 8px 24px 4px; overflow-y: auto; }
+.help-foot { padding: 14px 24px; border-top: 1px solid var(--border); }
+.help-foot .btn { width: 100%; }
+.help-sec { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.help-sec:last-child { border-bottom: none; }
+.help-sec-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 700; color: var(--ink); margin-bottom: 5px;
+}
+.help-sec-title .he-ico { font-size: 16px; line-height: 1; }
+.help-sec p { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; }
+.help-sec .he-swatch {
+  display: inline-block; width: 11px; height: 11px;
+  border-radius: 3px; vertical-align: -1px; margin: 0 1px;
+}
+
+@media (max-width: 640px) {
+  .popup.help-popup { width: calc(100vw - 24px); }
+}
+@media (max-width: 420px) {
+  .popup.help-popup { width: 100%; max-height: 86vh; border-radius: 20px 20px 0 0; }
+}
+
 .popup-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
 .popup-sub   { font-size: 12px; color: var(--ink-soft); margin-bottom: 18px; }
 .popup-lbl   { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 8px; }
@@ -729,6 +778,9 @@ body {
   </a>
   <div class="topbar-right">
     <div class="sync-dot" id="syncDot"></div>
+    <button class="help-btn" onclick="openHelp()" title="Help — how this app works" aria-label="Help">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7.5"/><path d="M7.7 7.6a2.3 2.3 0 1 1 3.2 2.1c-.6.3-.9.7-.9 1.4v.3" stroke-linecap="round"/><circle cx="10" cy="14.4" r=".7" fill="currentColor" stroke="none"/></svg>
+    </button>
     <div class="user-chip">
       <div class="user-avatar" id="userAvatar">?</div>
       <span class="user-name" id="userName">…</span>
@@ -1004,6 +1056,74 @@ body {
     <div class="popup-footer">
       <button class="btn btn-danger" id="compRemove" onclick="removeComp()" style="display:none">Remove</button>
       <button class="btn btn-ghost"  onclick="closeCompPopup()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Help Popup ────────────────────────────────────────────────── -->
+<div class="overlay" id="helpOverlay" style="display:none" onclick="helpOverlayClick(event)">
+  <div class="popup help-popup">
+    <div class="help-head">
+      <div class="popup-title">How Holiday Planner works</div>
+    </div>
+    <div class="help-body">
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">📅</span> Calendar</div>
+        <p>The whole year at a glance. Click any working day to book time off — as a
+          <strong>full day</strong>, <strong>morning</strong> or <strong>afternoon</strong>.
+          The bar at the top shows how many of your days you've used and how many are left.</p>
+      </div>
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">🏝️</span> Booking & ranges</div>
+        <p>To plan a longer trip, open any day and use <strong>Date Range</strong> — it fills
+          every working day between two dates and automatically skips weekends and public
+          holidays. Consecutive days are grouped into one vacation.</p>
+      </div>
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">🧳</span> My Vacations</div>
+        <p>Every planned trip listed with its days and hours. Use the
+          <strong>download icon</strong> on a trip to export just that vacation, or the ×
+          to remove it.</p>
+      </div>
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">⚙️</span> Settings</div>
+        <p><strong>Public holidays:</strong> load Zürich or Hamburg holidays in one click, or
+          add your own (full or ½ day). <strong>Work settings:</strong> set your yearly
+          vacation budget and daily hours. <strong>Export:</strong> download all vacations,
+          or all holidays, as an <strong>.ics</strong> file for Google / Outlook / Apple Calendar.</p>
+      </div>
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">🗓️</span> Weekend working days</div>
+        <p>If you regularly work Saturdays or Sundays, mark them in Settings as a
+          <strong>half</strong> or <strong>full</strong> working day. They then become bookable
+          and count towards your budget (a half day counts as 0.5).</p>
+      </div>
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">➕</span> Compensation days</div>
+        <p>Worked on a free weekend as a one-off? Click that
+          <span class="he-swatch" style="background:var(--green-bg);border:1px solid var(--green)"></span>
+          Saturday/Sunday and choose <strong>+1</strong> or <strong>+0.5</strong>. The
+          compensation day is added straight to your vacation balance for the year.</p>
+      </div>
+
+      <div class="help-sec">
+        <div class="help-sec-title"><span class="he-ico">🎨</span> Colours</div>
+        <p>
+          <span class="he-swatch" style="background:var(--green)"></span> booked time off ·
+          <span class="he-swatch" style="background:var(--amber-bg);border:1px solid var(--amber)"></span> public holiday ·
+          <span class="he-swatch" style="background:var(--accent-bg)"></span> weekend.
+          Everything you change is saved automatically and synced across your devices.</p>
+      </div>
+
+    </div>
+    <div class="help-foot">
+      <button class="btn btn-accent" onclick="closeHelp()">Got it</button>
     </div>
   </div>
 </div>
@@ -1873,6 +1993,13 @@ function closeCompPopup(){
   compDate=null;
 }
 function compOverlayClick(e){ if(e.target===document.getElementById('compOverlay')) closeCompPopup(); }
+
+/* ─────────────────────────────────────────────
+   HELP
+───────────────────────────────────────────── */
+function openHelp(){  document.getElementById('helpOverlay').style.display='flex'; }
+function closeHelp(){ document.getElementById('helpOverlay').style.display='none'; }
+function helpOverlayClick(e){ if(e.target===document.getElementById('helpOverlay')) closeHelp(); }
 
 /* ─────────────────────────────────────────────
    YEAR NAV
