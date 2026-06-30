@@ -1702,20 +1702,13 @@ function downloadICS(filename, events) {
 
   const blob = new Blob([lines.join('\r\n')], { type:'text/calendar' });
   const url  = URL.createObjectURL(blob);
-
-  // Try to open the .ics directly so the device offers "add to calendar".
-  // Falls back to a normal download if the browser blocks the new tab.
-  const win = window.open(url, '_blank');
-  if (!win) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-  // Keep the URL alive long enough for the opened tab / calendar app to read it.
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 
   showToast('Download started');
 }
