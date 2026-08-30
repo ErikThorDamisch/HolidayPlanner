@@ -184,8 +184,31 @@ function start() {
         });
 }
 
+// ── Vercel serverless entry ──────────────────────────────────────────────────
+// Vercel wraps this file as a single Function covering every route (its
+// zero-config Node.js detection, triggered by package.json's "main" field),
+// so the module's default export has to be a request handler itself — an
+// object of named exports isn't valid there. The pool/app are built lazily on
+// first invocation and reused across warm invocations of the same function.
+let vercelPool, vercelApp, vercelDbReady;
+function vercelHandler(req, res) {
+    if (!vercelApp) {
+        vercelPool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
+        });
+        vercelApp = createApp({ pool: vercelPool });
+    }
+    if (!vercelDbReady) vercelDbReady = initDb(vercelPool);
+    return vercelDbReady.then(() => vercelApp(req, res));
+}
+
 if (require.main === module) {
     start();
 }
 
-module.exports = { createApp, initDb, defaultYearData, start };
+module.exports = vercelHandler;
+module.exports.createApp = createApp;
+module.exports.initDb = initDb;
+module.exports.defaultYearData = defaultYearData;
+module.exports.start = start;
