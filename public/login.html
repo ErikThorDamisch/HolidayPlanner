@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Holiday Planner — Sign In</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0A0E1A">
+<meta name="theme-color" content="#201e1d">
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,187 +13,116 @@
 <meta name="apple-mobile-web-app-title" content="Holidays">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ink:     #0A0E1A;
-  --muted:   #64748B;
-  --bg:      #ECEEF8;
-  --surface: #FFFFFF;
-  --border:  #DDE0F0;
-  --accent:  #5C6BC0;
-  --red:     #E84040;
+  --color-bg:         #f3f2f2;
+  --color-ink:        #201e1d;
+  --color-muted:      #605d5d;
+  --color-placeholder:#9b9797;
+  --color-rule:       #d7d3d3;
+  --color-accent:     #ec3013;
+  --color-accent-deep:#ae1800;
+  --color-green:      #164A3C;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: var(--ink);
+  font-family: 'Archivo', system-ui, sans-serif;
+  background: var(--color-rule);
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   padding: 24px;
-  /* Subtle dot grid */
-  background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
-  background-size: 28px 28px;
-  background-color: var(--ink);
+  color: var(--color-ink);
 }
+button, input { font-family: inherit; color: inherit; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
 
 .card {
-  width: 100%;
-  max-width: 400px;
-  background: var(--surface);
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 32px 80px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
+  width: 100%; max-width: 420px;
+  background: var(--color-ink);
+  box-shadow: 0 24px 60px rgba(23,24,28,.24);
+  display: flex; flex-direction: column;
 }
 
-/* Brand */
 .brand {
-  padding: 32px 32px 26px;
-  text-align: center;
+  padding: 28px 32px;
+  border-bottom: 2px solid var(--color-bg);
+  display: flex; align-items: center; gap: 11px;
 }
+.brand-mark { width: 20px; height: 20px; background: var(--color-accent); flex-shrink: 0; }
+.brand-name { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--color-bg); }
 
-.brand-mark {
-  width: 52px; height: 52px;
-  background: var(--accent);
-  border-radius: 14px;
-  display: inline-flex; align-items: center; justify-content: center;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(92,107,192,.45);
+.hero { padding: 28px 32px 8px; }
+.hero-title {
+  font-size: 30px; font-weight: 700; letter-spacing: -.035em; line-height: 1.08;
+  color: var(--color-bg); margin-bottom: 8px;
 }
-.brand-mark svg { width: 26px; height: 26px; fill: #fff; }
+.hero-sub { font-size: 13px; color: rgba(243,242,242,.6); line-height: 1.55; max-width: 320px; }
 
-.brand-name {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -.03em;
-  color: var(--ink);
-}
+.panel { background: var(--color-bg); padding: 26px 32px 30px; margin-top: 24px; }
 
-.brand-sub {
-  font-size: 13px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-/* Tabs */
-.tabs {
-  display: flex;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-}
-
+.tabs { display: flex; gap: 22px; border-bottom: 2px solid var(--color-ink); margin-bottom: 20px; }
 .tab {
-  flex: 1; padding: 13px;
-  text-align: center;
-  font-size: 13.5px; font-weight: 500;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all .15s;
-  user-select: none;
-  background: transparent;
-  border-top: none; border-left: none; border-right: none;
-  font-family: inherit;
+  font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--color-muted); padding-bottom: 8px; cursor: pointer;
+  background: none; border: none; font-family: inherit;
 }
-
-.tab.active {
-  color: var(--ink);
-  font-weight: 700;
-  border-bottom-color: var(--accent);
-  background: var(--surface);
-}
-
-/* Form */
-.form-body { padding: 26px 28px 30px; }
+.tab.active { color: var(--color-ink); font-weight: 700; box-shadow: inset 0 -3px 0 var(--color-accent); }
 
 .msg {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 16px;
-  display: none;
-  font-weight: 500;
+  padding: 10px 12px; border: 1.5px solid var(--color-accent);
+  font-size: 12.5px; margin-bottom: 16px; display: none; font-weight: 500;
+  color: var(--color-accent-deep);
 }
-.msg.error   { background: #FDEAEA; color: var(--red); border: 1px solid #fca5a5; display: block; }
-.msg.success { background: #E8FAF3; color: #1e7d55; border: 1px solid #86efac; display: block; }
+.msg.error   { display: block; }
+.msg.success { display: block; border-color: var(--color-green); color: var(--color-green); }
 
 .field { margin-bottom: 14px; }
-
 .field label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--color-muted); margin-bottom: 6px;
 }
-
 .field input {
-  width: 100%;
-  padding: 11px 13px;
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  font-family: inherit;
-  font-size: 14.5px;
-  color: var(--ink);
-  background: var(--bg);
-  outline: none;
-  transition: border-color .15s, background .15s;
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--color-rule);
+  font-size: 14px; color: var(--color-ink); background: transparent; outline: none;
 }
-.field input:focus { border-color: var(--accent); background: var(--surface); }
+.field input:focus { border-color: var(--color-ink); }
+.field input[type="password"] { font-family: 'IBM Plex Mono', monospace; }
 
 .submit-btn {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 9px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -.01em;
+  width: 100%; padding: 12px; margin-top: 6px;
+  background: var(--color-green); color: var(--color-bg); border: none;
+  font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   cursor: pointer;
-  transition: background .15s, transform .1s;
-  box-shadow: 0 4px 14px rgba(92,107,192,.4);
 }
-.submit-btn:hover  { background: #4a5aad; }
-.submit-btn:active { transform: scale(.99); }
-.submit-btn:disabled { background: #C5C9E0; box-shadow: none; cursor: not-allowed; }
+.submit-btn:hover  { background: #0f382d; }
+.submit-btn:disabled { background: var(--color-rule); color: var(--color-muted); cursor: not-allowed; }
 
-.hint {
-  font-size: 12px;
-  color: var(--muted);
-  text-align: center;
-  margin-top: 16px;
-  line-height: 1.5;
-}
+.hint { font-size: 12px; color: var(--color-muted); text-align: center; margin-top: 16px; line-height: 1.5; }
+.hint strong { color: var(--color-ink); }
 </style>
 </head>
 <body>
 
 <div class="card">
   <div class="brand">
-    <div class="brand-mark">
-      <svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 2a6 6 0 110 12A6 6 0 0110 4zm0 1a1 1 0 00-1 1v4.586l-2.707 2.707a1 1 0 101.414 1.414L10 12.414V6a1 1 0 00-1-1z" fill-rule="evenodd" clip-rule="evenodd"/></svg>
-    </div>
+    <div class="brand-mark"></div>
     <div class="brand-name">Holiday Planner</div>
-    <div class="brand-sub">Plan your days off, your way</div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" id="tabLogin"    onclick="show('login')">Sign In</button>
-    <button class="tab"        id="tabRegister" onclick="show('register')">Create Account</button>
+  <div class="hero">
+    <div class="hero-title">A year of days off,<br>on one page.</div>
+    <div class="hero-sub">Plan, count and export your time off. Zürich and Hamburg holidays built in.</div>
   </div>
 
-  <div class="form-body">
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab active" id="tabLogin"    onclick="show('login')">Sign in</button>
+      <button class="tab"        id="tabRegister" onclick="show('register')">Create account</button>
+    </div>
+
     <div class="msg" id="msg"></div>
 
     <!-- Login -->
@@ -206,8 +135,8 @@ body {
         <label>Password</label>
         <input type="password" id="lPass" placeholder="Your password" autocomplete="current-password">
       </div>
-      <button class="submit-btn" id="btnLogin" onclick="doLogin()">Sign In</button>
-      <div class="hint">No account? Click <strong>Create Account</strong> above.</div>
+      <button class="submit-btn" id="btnLogin" onclick="doLogin()">Sign in</button>
+      <div class="hint">No account? Click <strong>Create account</strong> above.</div>
     </div>
 
     <!-- Register -->
@@ -221,11 +150,11 @@ body {
         <input type="password" id="rPass" placeholder="At least 6 characters" autocomplete="new-password">
       </div>
       <div class="field">
-        <label>Confirm Password</label>
+        <label>Confirm password</label>
         <input type="password" id="rConf" placeholder="Repeat your password" autocomplete="new-password">
       </div>
-      <button class="submit-btn" id="btnReg" onclick="doRegister()">Create Account</button>
-      <div class="hint">Already have an account? Click <strong>Sign In</strong> above.</div>
+      <button class="submit-btn" id="btnReg" onclick="doRegister()">Create account</button>
+      <div class="hint">Already have an account? Click <strong>Sign in</strong> above.</div>
     </div>
   </div>
 </div>
@@ -265,7 +194,7 @@ async function doLogin(){
   const username=document.getElementById('lUser').value.trim();
   const password=document.getElementById('lPass').value;
   if(!username||!password){ showMsg('Please enter your username and password.','error'); return; }
-  setBusy('btnLogin',true,'Sign In','Signing in…');
+  setBusy('btnLogin',true,'Sign in','Signing in…');
   try{
     const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
     const data=await r.json();
@@ -274,7 +203,7 @@ async function doLogin(){
     localStorage.setItem('shp_username',data.username);
     location.href='/';
   } catch(e){ showMsg('Could not reach the server.','error'); }
-  finally{ setBusy('btnLogin',false,'Sign In','Signing in…'); }
+  finally{ setBusy('btnLogin',false,'Sign in','Signing in…'); }
 }
 
 async function doRegister(){
@@ -284,7 +213,7 @@ async function doRegister(){
   const confirm =document.getElementById('rConf').value;
   if(!username||!password){ showMsg('Please fill in all fields.','error'); return; }
   if(password!==confirm){ showMsg('Passwords do not match.','error'); return; }
-  setBusy('btnReg',true,'Create Account','Creating account…');
+  setBusy('btnReg',true,'Create account','Creating account…');
   try{
     const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
     const data=await r.json();
@@ -293,7 +222,7 @@ async function doRegister(){
     localStorage.setItem('shp_username',data.username);
     location.href='/';
   } catch(e){ showMsg('Could not reach the server.','error'); }
-  finally{ setBusy('btnReg',false,'Create Account','Creating account…'); }
+  finally{ setBusy('btnReg',false,'Create account','Creating account…'); }
 }
 
 document.addEventListener('keydown',e=>{
